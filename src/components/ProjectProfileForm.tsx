@@ -1,0 +1,350 @@
+'use client';
+
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { HelpCircle, Check } from 'lucide-react';
+import Button from './ui/Button';
+
+interface FacilityCategory {
+  title: string;
+  items: string[];
+}
+
+const facilityCategories: FacilityCategory[] = [
+  {
+    title: 'Community/Recreation',
+    items: ['Community Center', 'Gym', 'Pool', 'Sports Complex'],
+  },
+  {
+    title: 'Cultural',
+    items: ['Attractions (e.g. zoo)', 'Library', 'Museum/Gallery', 'Visitor Center'],
+  },
+  {
+    title: 'Educational',
+    items: ['College/University', 'K-12 School', 'Preschool/Daycare'],
+  },
+  {
+    title: 'Food Service',
+    items: ['Banquet Facility', 'Cafeteria', 'Fast Food', 'Restaurant/Café/Bar'],
+  },
+  {
+    title: 'Healthcare',
+    items: ['Clinic/Outpatient Medical Office', 'Hospital', 'Nursing Home/Assisted Living'],
+  },
+  {
+    title: 'Retail',
+    items: ['Bank', 'Convenience Store', 'Grocery/Food Market', 'Large Retail Store', 'Shopping Mall', 'Store/Boutique'],
+  },
+  {
+    title: 'Warehouse',
+    items: ['General', 'Data Center', 'Distribution/Shipping', 'Self-Storage Unit'],
+  },
+  {
+    title: 'Industrial',
+    items: ['Manufacturing', 'Power Station/Plant'],
+  },
+  {
+    title: 'Lodging',
+    items: ['Dormitory', 'Hotel/Motel/Inn'],
+  },
+  {
+    title: 'Office',
+    items: ['Administrative/Professional Office', 'Government Office'],
+  },
+  {
+    title: 'Assembly',
+    items: ['Convention Center', 'Entertainment (e.g. concert hall)', 'Stadium/Arena', 'Religious Services'],
+  },
+  {
+    title: 'Public Safety',
+    items: ['Police Station', 'Fire/Rescue Station'],
+  },
+];
+
+export default function ProjectProfileForm() {
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [formData, setFormData] = useState({
+    contactName: '',
+    contactEmail: '',
+    telephone: '',
+    firmName: '',
+    ownerName: '',
+    projectName: '',
+    address1: '',
+    address2: '',
+    city: '',
+    state: '',
+    zip: '',
+    country: 'United States',
+    buildingArea: '',
+    siteArea: '',
+    certification: 'Guided Certification',
+    services: [] as string[],
+    facilityUses: [] as string[],
+  });
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleCheckboxChange = (name: 'services' | 'facilityUses', item: string) => {
+    setFormData((prev) => {
+      const current = prev[name];
+      const next = current.includes(item)
+        ? current.filter((i) => i !== item)
+        : [...current, item];
+      return { ...prev, [name]: next };
+    });
+  };
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch('/api/projects', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to create project');
+      }
+
+      const data = await response.json();
+      router.push(`/projects/${data.id}`);
+      router.refresh();
+    } catch (err: any) {
+      console.error('Project creation error:', err);
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSave} className="space-y-12 pb-20">
+      
+      {/* Page Title */}
+      <div className="bg-slate-50 border-y border-slate-200 py-3 px-6 -mx-4 sm:-mx-6 lg:-mx-8 flex justify-between items-center">
+        <h2 className="text-lg font-bold text-slate-800">Project Profile</h2>
+        {error && (
+          <div className="bg-red-50 text-red-600 px-4 py-1 rounded text-sm font-medium border border-red-100 italic tracking-tight uppercase">
+            {error}
+          </div>
+        )}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+        
+        {/* Section 1: Contact Information */}
+        <div className="space-y-6">
+          <div className="flex items-center gap-3">
+             <div className="w-8 h-8 rounded-full border-2 border-slate-800 flex items-center justify-center font-bold text-lg">1</div>
+             <h3 className="text-xl font-bold text-slate-800">Contact Information</h3>
+          </div>
+
+          <div className="space-y-4">
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-slate-600">Primary Contact Name (first and last) <span className="text-red-500">*</span></label>
+              <input type="text" name="contactName" value={formData.contactName} onChange={handleInputChange} placeholder="Primary Contact Person" className="w-full border border-slate-300 rounded px-4 py-2 text-sm focus:ring-2 focus:ring-secondary outline-none" required />
+            </div>
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-slate-600">Primary E-mail <span className="text-red-500">*</span></label>
+              <input type="email" name="contactEmail" value={formData.contactEmail} onChange={handleInputChange} placeholder="Primary Contact E-mail" className="w-full border border-slate-300 rounded px-4 py-2 text-sm focus:ring-2 focus:ring-secondary outline-none" required />
+            </div>
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-slate-600">Primary Telephone <span className="text-red-500">*</span></label>
+              <div className="flex">
+                <div className="bg-slate-50 border border-slate-300 border-r-0 rounded-l px-3 flex items-center gap-2">
+                   <span className="text-lg">🇺🇸</span>
+                   <span className="text-xs text-slate-400">▼</span>
+                </div>
+                <input type="tel" name="telephone" value={formData.telephone} onChange={handleInputChange} placeholder="(201) 555-5555" className="w-full border border-slate-300 rounded-r px-4 py-2 text-sm focus:ring-2 focus:ring-secondary outline-none" required />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-slate-600">Architect/Firm Name</label>
+              <input type="text" name="firmName" value={formData.firmName} onChange={handleInputChange} placeholder="Project Architect" className="w-full border border-slate-300 rounded px-4 py-2 text-sm focus:ring-2 focus:ring-secondary outline-none" />
+            </div>
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-slate-600">Owner's Name</label>
+              <input type="text" name="ownerName" value={formData.ownerName} onChange={handleInputChange} placeholder="Project Owner" className="w-full border border-slate-300 rounded px-4 py-2 text-sm focus:ring-2 focus:ring-secondary outline-none" />
+            </div>
+          </div>
+        </div>
+
+        {/* Section 2: Project Information */}
+        <div className="space-y-6">
+          <div className="flex items-center gap-3">
+             <div className="w-8 h-8 rounded-full border-2 border-slate-800 flex items-center justify-center font-bold text-lg">2</div>
+             <h3 className="text-xl font-bold text-slate-800">Project Information</h3>
+          </div>
+
+          <div className="space-y-4">
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-slate-600">Project Name <span className="text-red-500">*</span></label>
+              <input type="text" name="projectName" value={formData.projectName} onChange={handleInputChange} placeholder="Project Title" className="w-full border border-slate-300 rounded px-4 py-2 text-sm focus:ring-2 focus:ring-secondary outline-none" required />
+            </div>
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-slate-600">Address Line 1</label>
+              <input type="text" name="address1" value={formData.address1} onChange={handleInputChange} placeholder="Project Address Line 1" className="w-full border border-slate-300 rounded px-4 py-2 text-sm focus:ring-2 focus:ring-secondary outline-none" />
+            </div>
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-slate-600">Address Line 2</label>
+              <input type="text" name="address2" value={formData.address2} onChange={handleInputChange} placeholder="Project Address Line 2" className="w-full border border-slate-300 rounded px-4 py-2 text-sm focus:ring-2 focus:ring-secondary outline-none" />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-slate-600">City</label>
+                <input type="text" name="city" value={formData.city} onChange={handleInputChange} placeholder="City" className="w-full border border-slate-300 rounded px-4 py-2 text-sm focus:ring-2 focus:ring-secondary outline-none" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-slate-600">State/Province</label>
+                <select name="state" value={formData.state} onChange={handleInputChange} className="w-full border border-slate-300 rounded px-4 py-2 text-sm focus:ring-2 focus:ring-secondary outline-none bg-white">
+                  <option>- State -</option>
+                  <option>New York</option>
+                  <option>California</option>
+                </select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-slate-600">ZIP/Postal code</label>
+                <input type="text" name="zip" value={formData.zip} onChange={handleInputChange} placeholder="ZIP Code" className="w-full border border-slate-300 rounded px-4 py-2 text-sm focus:ring-2 focus:ring-secondary outline-none" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-slate-600">Country</label>
+                <select name="country" value={formData.country} onChange={handleInputChange} className="w-full border border-slate-300 rounded px-4 py-2 text-sm focus:ring-2 focus:ring-secondary outline-none bg-white">
+                  <option>United States</option>
+                  <option>Canada</option>
+                </select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4 pt-2">
+               <div className="space-y-1">
+                  <div className="flex items-center gap-1">
+                    <label className="text-sm font-medium text-slate-600">Building Area</label>
+                    <HelpCircle size={14} className="text-red-400 rotate-180" />
+                  </div>
+                  <div className="flex">
+                    <input type="text" placeholder="sq. ft" className="w-full border border-slate-300 rounded px-4 py-2 text-sm focus:ring-2 focus:ring-secondary outline-none" />
+                  </div>
+               </div>
+               <div className="space-y-1">
+                  <div className="flex items-center gap-1">
+                    <label className="text-sm font-medium text-slate-600">Site Area</label>
+                    <HelpCircle size={14} className="text-red-400 rotate-180" />
+                  </div>
+                  <div className="flex">
+                    <input type="text" placeholder="acres" className="w-full border border-slate-300 rounded px-4 py-2 text-sm focus:ring-2 focus:ring-secondary outline-none" />
+                  </div>
+               </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Section 3: Potential Services Needed */}
+        <div className="space-y-6">
+          <div className="flex items-center gap-3">
+             <div className="w-8 h-8 rounded-full border-2 border-slate-800 flex items-center justify-center font-bold text-lg">3</div>
+             <h3 className="text-xl font-bold text-slate-800">Potential Services Needed</h3>
+          </div>
+          <p className="text-xs text-slate-500 leading-tight">
+            (Select all of the <span className="text-[#002a54] font-bold">isUD services</span> you may be interested in for this project)
+          </p>
+
+          <div className="space-y-6">
+            <div className="space-y-3">
+              <label className="text-sm font-bold text-slate-800 block">isUD Certification <span className="text-red-500">*</span></label>
+              <div className="flex gap-6">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="radio" name="certification" value="Guided Certification" checked={formData.certification === 'Guided Certification'} onChange={handleInputChange} className="w-4 h-4 text-secondary focus:ring-secondary border-slate-300" />
+                  <span className="text-sm text-slate-700">Guided Certification</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="radio" name="certification" value="Certification Only" checked={formData.certification === 'Certification Only'} onChange={handleInputChange} className="w-4 h-4 text-secondary focus:ring-secondary border-slate-300" />
+                  <span className="text-sm text-slate-700">Certification Only</span>
+                </label>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <label className="text-sm font-bold text-slate-800 block">Other Services Available</label>
+              <div className="space-y-2">
+                {['Select All', 'Design Review', 'Facilities Assessment', 'Design Guidebook Development and Integration', 'Research', 'Training', 'Code Compliance Assessment'].map((service) => (
+                  <label key={service} className="flex items-center gap-2 cursor-pointer group">
+                    <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${formData.services.includes(service) ? 'bg-secondary border-secondary' : 'bg-slate-100 border-slate-300 group-hover:border-slate-400'}`}>
+                      {formData.services.includes(service) && <Check size={12} className="text-white" />}
+                    </div>
+                    <input type="checkbox" className="hidden" onChange={() => handleCheckboxChange('services', service)} />
+                    <span className="text-sm text-slate-700">{service}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Section 4: Facility Uses */}
+      <div className="space-y-8 pt-12 border-t border-slate-200">
+        <div className="flex items-center gap-3">
+           <div className="w-8 h-8 rounded-full border-2 border-slate-800 flex items-center justify-center font-bold text-lg">4</div>
+           <div className="flex items-baseline gap-2">
+             <h3 className="text-xl font-bold text-slate-800">Facility Uses</h3>
+             <span className="text-xs text-slate-500">(Select all that apply)</span>
+           </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-x-8 gap-y-10">
+          {facilityCategories.map((category) => (
+            <div key={category.title} className="space-y-3">
+               <h4 className="text-sm font-bold text-slate-900 border-b border-slate-100 pb-1">{category.title}</h4>
+               <div className="space-y-2">
+                  {category.items.map((item) => (
+                    <label key={item} className="flex items-start gap-2 cursor-pointer group">
+                      <div className={`mt-0.5 w-4 h-4 shrink-0 rounded border flex items-center justify-center transition-colors ${formData.facilityUses.includes(item) ? 'bg-secondary border-secondary' : 'bg-slate-100 border-slate-300 group-hover:border-slate-400'}`}>
+                        {formData.facilityUses.includes(item) && <Check size={12} className="text-white" />}
+                      </div>
+                      <input type="checkbox" className="hidden" onChange={() => handleCheckboxChange('facilityUses', item)} />
+                      <span className="text-xs text-slate-700 leading-tight">{item}</span>
+                    </label>
+                  ))}
+               </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Action Buttons */}
+      <div className="flex justify-end items-center gap-4 pt-12">
+        <Button 
+          type="button" 
+          variant="secondary" 
+          className="bg-[#002a54] hover:bg-[#001d3d] text-white px-8" 
+          onClick={() => router.push('/')}
+        >
+          Cancel
+        </Button>
+        <Button 
+          type="submit" 
+          variant="primary" 
+          className="bg-[#002a54] hover:bg-[#001d3d] px-10 disabled:opacity-50"
+          disabled={isLoading}
+        >
+          {isLoading ? 'Saving...' : 'Save'}
+        </Button>
+      </div>
+
+    </form>
+  );
+}

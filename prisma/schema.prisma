@@ -1,0 +1,216 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                   String            @id @default(uuid())
+  firstName            String
+  lastName             String
+  email                String            @unique
+  telephone            String
+  jobTitle             String?
+  company              String?
+  professionRole       String
+  reason               String
+  hashedPassword       String
+  securityQuestion     String
+  hashedSecurityAnswer String
+  systemRole           SystemRole        @default(USER)
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+  accounts             Account[]
+  sessions             Session[]
+  projects             Project[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+enum SystemRole {
+  USER
+  ADMIN
+}
+
+enum ProjectStatus {
+  ONGOING
+  COMPLETED
+  IN_REVIEW
+  PENDING
+  INACTIVE
+}
+
+enum ResponseStatus {
+  IMPLEMENTED
+  NOT_IMPLEMENTED
+  PARTIAL
+  NOT_APPLICABLE
+}
+
+model Project {
+  id            String            @id @default(uuid())
+  projectName   String
+  contactName   String
+  contactEmail  String
+  telephone     String
+  firmName      String?
+  ownerName     String?
+  address1      String?
+  address2      String?
+  city          String?
+  state         String?
+  zip           String?
+  country       String            @default("United States")
+  buildingArea  String?
+  siteArea      String?
+  certification String            @default("Guided Certification")
+  services      String[]          @default([])
+  status        ProjectStatus     @default(ONGOING)
+  score         Float             @default(0)
+  userId        String
+  user          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  facilityUses  FacilityUse[]
+  responses     ProjectResponse[]
+}
+
+// --- Solution Library (Hierarchical) ---
+
+model Chapter {
+  id           String    @id @default(uuid())
+  number       String    @unique // H1#
+  title        String // H1_Ch_Title
+  totalCredits Float // H1_Credits
+  sections     Section[]
+}
+
+model Section {
+  id                  String        @id @default(uuid())
+  number              String        @unique // H2#
+  title               String // H2_Sec_Title
+  totalCredits        Float // H2_Credits
+  chapterId           String
+  chapter             Chapter       @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  subSections         SubSection[]
+  solutions           Solution[]
+  facilityUses        FacilityUse[]
+  minPoints1          Int           @default(0)
+  minPoints2          Int           @default(0)
+  minPoints3          Int           @default(0)
+  detailedInstruction String?       @db.Text
+}
+
+model SubSection {
+  id           String     @id @default(uuid())
+  number       String     @unique // H3#
+  title        String // H3_Sec_Title
+  totalCredits Float // H3_Credits
+  sectionId    String
+  section      Section    @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  solutions    Solution[]
+}
+
+model Solution {
+  id             String            @id @default(uuid())
+  refId          String // Ref#
+  standardNumber String            @unique // Standard#
+  text           String            @db.Text
+  points         Float             @default(0)
+  instruction    String?           @db.Text
+  sectionId      String
+  section        Section           @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  subSectionId   String?
+  subSection     SubSection?       @relation(fields: [subSectionId], references: [id])
+  goals          Goal[]
+  phases         Phase[]
+  responses      ProjectResponse[]
+
+  // Media (FigA, FigB, etc.)
+  figures Figure[]
+}
+
+model Figure {
+  id         String   @id @default(uuid())
+  solutionId String
+  solution   Solution @relation(fields: [solutionId], references: [id], onDelete: Cascade)
+  label      String // FigA, FigB, etc.
+  number     String? // FigA_No
+  caption    String?  @db.Text
+  altTag     String?  @db.Text
+  url        String?
+}
+
+// --- Dynamic Criteria ---
+
+model Goal {
+  id        String     @id @default(uuid())
+  abbr      String     @unique // BF, Wellness, etc.
+  text      String
+  solutions Solution[]
+}
+
+model Phase {
+  id        String     @id @default(uuid())
+  name      String     @unique // Initiate, Schematic Design, etc.
+  solutions Solution[]
+}
+
+model FacilityUse {
+  id       String    @id @default(uuid())
+  name     String    @unique // Gym, Pool, etc.
+  sections Section[]
+  projects Project[]
+}
+
+// --- Project Tracking ---
+
+model ProjectResponse {
+  id         String         @id @default(uuid())
+  projectId  String
+  project    Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  solutionId String
+  solution   Solution       @relation(fields: [solutionId], references: [id], onDelete: Cascade)
+  status     ResponseStatus @default(NOT_IMPLEMENTED)
+  notes      String?        @db.Text
+  evidenceUrl String?
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+
+  @@unique([projectId, solutionId])
+}

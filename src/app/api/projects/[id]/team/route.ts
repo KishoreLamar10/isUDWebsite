@@ -86,6 +86,13 @@ export async function POST(
       },
     });
 
+    return NextResponse.json(invite);
+  } catch (error: any) {
+    console.error('Error creating invite:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
 // PATCH /api/projects/[id]/team (Accept/Update)
 export async function PATCH(
   req: Request,

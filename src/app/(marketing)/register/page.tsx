@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import LoginForm from "@/components/LoginForm";
 import RegisterForm from "@/components/RegisterForm";
 
@@ -10,19 +11,21 @@ export default function RegisterPage() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="flex flex-col lg:flex-row gap-16 xl:gap-24">
-          
-          {/* Left Column: Login */}
-          <div className="lg:w-1/3 lg:border-r lg:border-slate-100 lg:pr-16 xl:pr-24">
-            <LoginForm />
-          </div>
+        <Suspense fallback={<div className="flex items-center justify-center p-12">Loading...</div>}>
+          <div className="flex flex-col lg:flex-row gap-16 xl:gap-24">
+            
+            {/* Left Column: Login */}
+            <div className="lg:w-1/3 lg:border-r lg:border-slate-100 lg:pr-16 xl:pr-24">
+              <LoginForm />
+            </div>
 
-          {/* Right Column: Register */}
-          <div className="lg:w-2/3">
-            <RegisterForm />
+            {/* Right Column: Register */}
+            <div className="lg:w-2/3">
+              <RegisterForm />
+            </div>
+            
           </div>
-          
-        </div>
+        </Suspense>
       </div>
     </div>
   );

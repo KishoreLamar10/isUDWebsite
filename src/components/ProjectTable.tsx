@@ -41,12 +41,21 @@ export default function ProjectTable() {
 
       {/* Controls Bar */}
       <div className="flex flex-col sm:flex-row justify-between items-center gap-6">
-        <Link href="/projects/new">
-          <Button variant="primary" className="gap-2 px-5">
-            <Plus size={18} />
-            Add Project
-          </Button>
-        </Link>
+        <div className="flex flex-wrap items-center gap-4">
+          <Link href="/projects/new">
+            <Button variant="primary" className="gap-2 px-5 bg-[#002a54] hover:bg-[#001d3d]">
+              <Plus size={18} />
+              Add Project
+            </Button>
+          </Link>
+          
+          <Link href="/solutions">
+            <Button variant="primary" className="gap-2 px-5 bg-secondary hover:bg-secondary-dark text-primary border-none shadow-sm">
+              <Search size={18} />
+              Browse Solutions
+            </Button>
+          </Link>
+        </div>
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-3">
             <label className="text-sm font-bold text-muted uppercase tracking-wider">Sort By</label>

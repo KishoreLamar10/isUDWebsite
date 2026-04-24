@@ -8,10 +8,10 @@ datasource db {
 }
 
 model User {
-  id                   String            @id @default(uuid())
+  id                   String     @id @default(uuid())
   firstName            String
   lastName             String
-  email                String            @unique
+  email                String     @unique
   telephone            String
   jobTitle             String?
   company              String?
@@ -20,12 +20,13 @@ model User {
   hashedPassword       String
   securityQuestion     String
   hashedSecurityAnswer String
-  systemRole           SystemRole        @default(USER)
-  createdAt            DateTime          @default(now())
-  updatedAt            DateTime          @updatedAt
+  systemRole           SystemRole @default(USER)
+  createdAt            DateTime   @default(now())
+  updatedAt            DateTime   @updatedAt
   accounts             Account[]
-  sessions             Session[]
   projects             Project[]
+  sessions             Session[]
+  projectMemberships   TeamMember[]
 }
 
 model Account {
@@ -62,26 +63,6 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
-enum SystemRole {
-  USER
-  ADMIN
-}
-
-enum ProjectStatus {
-  ONGOING
-  COMPLETED
-  IN_REVIEW
-  PENDING
-  INACTIVE
-}
-
-enum ResponseStatus {
-  IMPLEMENTED
-  NOT_IMPLEMENTED
-  PARTIAL
-  NOT_APPLICABLE
-}
-
 model Project {
   id            String            @id @default(uuid())
   projectName   String
@@ -103,114 +84,183 @@ model Project {
   status        ProjectStatus     @default(ONGOING)
   score         Float             @default(0)
   userId        String
-  user          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt     DateTime          @default(now())
   updatedAt     DateTime          @updatedAt
-  facilityUses  FacilityUse[]
+  user          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   responses     ProjectResponse[]
+  facilityUses  FacilityUse[]     @relation("FacilityUseToProject")
+  sectionToggles SectionToggle[]
+  teamMembers    TeamMember[]
 }
 
-// --- Solution Library (Hierarchical) ---
+model TeamMember {
+  id         String         @id @default(uuid())
+  projectId  String
+  userId     String?
+  email      String         // Track by email for invites
+  permission TeamPermission @default(VIEWER)
+  role       ProjectRole    @default(ARCHITECT)
+  status     TeamStatus     @default(PENDING)
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@unique([projectId, email])
+}
+
+enum TeamPermission {
+  ADMIN
+  EDITOR
+  VIEWER
+}
+
+enum ProjectRole {
+  PROJECT_MANAGER
+  ARCHITECT
+  CONSULTANT
+  DEVELOPMENT
+  OWNERSHIP
+  HR
+  ADVOCATE
+}
+
+enum TeamStatus {
+  ACTIVE
+  PENDING
+}
+
+model SectionToggle {
+  id        String   @id @default(uuid())
+  projectId String
+  sectionId String
+  isEnabled Boolean  @default(true)
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  section   Section  @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, sectionId])
+}
 
 model Chapter {
   id           String    @id @default(uuid())
-  number       String    @unique // H1#
-  title        String // H1_Ch_Title
-  totalCredits Float // H1_Credits
+  number       String    @unique
+  title        String
+  totalCredits Float
   sections     Section[]
 }
 
 model Section {
   id                  String        @id @default(uuid())
-  number              String        @unique // H2#
-  title               String // H2_Sec_Title
-  totalCredits        Float // H2_Credits
+  number              String
+  title               String
+  totalCredits        Float
   chapterId           String
-  chapter             Chapter       @relation(fields: [chapterId], references: [id], onDelete: Cascade)
-  subSections         SubSection[]
-  solutions           Solution[]
-  facilityUses        FacilityUse[]
   minPoints1          Int           @default(0)
   minPoints2          Int           @default(0)
   minPoints3          Int           @default(0)
-  detailedInstruction String?       @db.Text
+  detailedInstruction String?
+  chapter             Chapter       @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  solutions           Solution[]
+  subSections         SubSection[]
+  facilityUses        FacilityUse[] @relation("FacilityUseToSection")
+  sectionToggles      SectionToggle[]
+
+  @@unique([chapterId, number])
 }
 
 model SubSection {
   id           String     @id @default(uuid())
-  number       String     @unique // H3#
-  title        String // H3_Sec_Title
-  totalCredits Float // H3_Credits
+  number       String
+  title        String
+  totalCredits Float
   sectionId    String
-  section      Section    @relation(fields: [sectionId], references: [id], onDelete: Cascade)
   solutions    Solution[]
+  section      Section    @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+
+  @@unique([sectionId, number])
 }
 
 model Solution {
   id             String            @id @default(uuid())
-  refId          String // Ref#
-  standardNumber String            @unique // Standard#
-  text           String            @db.Text
+  refId          String
+  standardNumber String            @unique
+  text           String
   points         Float             @default(0)
-  instruction    String?           @db.Text
+  isMandatory    Boolean           @default(false)
+  instruction    String?
   sectionId      String
-  section        Section           @relation(fields: [sectionId], references: [id], onDelete: Cascade)
   subSectionId   String?
-  subSection     SubSection?       @relation(fields: [subSectionId], references: [id])
-  goals          Goal[]
-  phases         Phase[]
+  figures        Figure[]
   responses      ProjectResponse[]
-
-  // Media (FigA, FigB, etc.)
-  figures Figure[]
+  section        Section           @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  subSection     SubSection?       @relation(fields: [subSectionId], references: [id])
+  goals          Goal[]            @relation("GoalToSolution")
+  phases         Phase[]           @relation("PhaseToSolution")
 }
 
 model Figure {
   id         String   @id @default(uuid())
   solutionId String
-  solution   Solution @relation(fields: [solutionId], references: [id], onDelete: Cascade)
-  label      String // FigA, FigB, etc.
-  number     String? // FigA_No
-  caption    String?  @db.Text
-  altTag     String?  @db.Text
+  label      String
+  number     String?
+  caption    String?
+  altTag     String?
   url        String?
+  solution   Solution @relation(fields: [solutionId], references: [id], onDelete: Cascade)
 }
-
-// --- Dynamic Criteria ---
 
 model Goal {
   id        String     @id @default(uuid())
-  abbr      String     @unique // BF, Wellness, etc.
+  abbr      String     @unique
   text      String
-  solutions Solution[]
+  solutions Solution[] @relation("GoalToSolution")
 }
 
 model Phase {
   id        String     @id @default(uuid())
-  name      String     @unique // Initiate, Schematic Design, etc.
-  solutions Solution[]
+  name      String     @unique
+  solutions Solution[] @relation("PhaseToSolution")
 }
 
 model FacilityUse {
   id       String    @id @default(uuid())
-  name     String    @unique // Gym, Pool, etc.
-  sections Section[]
-  projects Project[]
+  name     String    @unique
+  projects Project[] @relation("FacilityUseToProject")
+  sections Section[] @relation("FacilityUseToSection")
 }
 
-// --- Project Tracking ---
-
 model ProjectResponse {
-  id         String         @id @default(uuid())
-  projectId  String
-  project    Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  solutionId String
-  solution   Solution       @relation(fields: [solutionId], references: [id], onDelete: Cascade)
-  status     ResponseStatus @default(NOT_IMPLEMENTED)
-  notes      String?        @db.Text
+  id          String         @id @default(uuid())
+  projectId   String
+  solutionId  String
+  status      ResponseStatus @default(NOT_IMPLEMENTED)
+  notes       String?
   evidenceUrl String?
-  createdAt  DateTime       @default(now())
-  updatedAt  DateTime       @updatedAt
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  project     Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  solution    Solution       @relation(fields: [solutionId], references: [id], onDelete: Cascade)
 
   @@unique([projectId, solutionId])
+}
+
+enum SystemRole {
+  USER
+  ADMIN
+}
+
+enum ProjectStatus {
+  ONGOING
+  COMPLETED
+  IN_REVIEW
+  PENDING
+  INACTIVE
+}
+
+enum ResponseStatus {
+  IMPLEMENTED
+  NOT_IMPLEMENTED
+  PARTIAL
+  NOT_APPLICABLE
 }

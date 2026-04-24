@@ -77,10 +77,11 @@ export default function LoginForm() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full border border-slate-300 rounded-sm px-4 py-3 text-sm focus:ring-2 focus:ring-secondary focus:border-secondary outline-none transition-all pr-10"
+              className="w-full border border-slate-300 rounded-sm px-4 py-3 text-sm focus:ring-2 focus:ring-secondary focus:border-secondary transition-all outline-none pr-10"
               placeholder="e-mail address"
               required
               disabled={loading}
+              suppressHydrationWarning={true}
             />
             <Mail className="absolute right-3 top-3.5 text-slate-400" size={18} />
           </div>
@@ -98,6 +99,7 @@ export default function LoginForm() {
               placeholder="password"
               required
               disabled={loading}
+              suppressHydrationWarning={true}
             />
             <Lock className="absolute right-3 top-3.5 text-slate-400" size={18} />
           </div>

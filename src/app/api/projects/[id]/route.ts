@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { calculateProjectScore } from '@/lib/scoring';
 
 export async function GET(
   req: Request,
@@ -16,78 +17,105 @@ export async function GET(
     const { id } = await params;
     const userId = (session.user as any).id;
 
+    console.log(`[Project Detail API] User ${userId} is requesting project ${id}`);
+
+    // Check if user is the owner OR a team member with ACTIVE status
     const project = await prisma.project.findFirst({
-      where: { id, userId },
+      where: {
+        id,
+        OR: [
+          { userId },
+          { 
+            teamMembers: { 
+              some: { 
+                userId,
+                status: 'ACTIVE'
+              } 
+            } 
+          }
+        ]
+      },
       include: {
         facilityUses: true,
-        responses: {
-          include: {
-            solution: {
-              include: {
-                section: {
-                  include: {
-                    chapter: true,
-                  },
-                },
-                goals: true,
-                phases: true,
-              },
-            },
-          },
-        },
+        responses: true,
+        sectionToggles: true,
+        teamMembers: {
+          where: { userId },
+        }
       },
     });
 
     if (!project) {
-      return NextResponse.json({ error: 'Project not found' }, { status: 404 });
+      console.warn(`[Project Detail API] Warning: Project ${id} NOT FOUND or NO ACCESS for user ${userId}.`);
+      return NextResponse.json({ error: 'Project not found or access denied' }, { status: 404 });
     }
 
-    // Calculate earned credits by chapter
+    // Determine current user's role
+    // Default to ADMIN if they are the Project.userId (owner)
+    const membership = project.teamMembers[0];
+    const userRole = project.userId === userId ? 'ADMIN' : (membership?.permission || 'VIEWER');
+
+    console.log(`[Project Detail API] Found project: "${project.projectName}"`);
+
+    // Calculate scores using universal utility
     const chapters = await prisma.chapter.findMany({
       orderBy: { number: 'asc' },
       include: {
         sections: {
           include: {
             solutions: {
-              select: { id: true, points: true },
+              select: { id: true, points: true, isMandatory: true, standardNumber: true },
             },
           },
         },
       },
     });
 
-    const chapterScores = chapters.map((ch) => {
-      const allSolutionIds = ch.sections.flatMap((s) => s.solutions.map((sol) => sol.id));
-      const totalAvailable = ch.totalCredits;
+    const scores = calculateProjectScore(
+      chapters || [],
+      project.responses || [],
+      project.sectionToggles || []
+    );
 
-      const implementedResponses = project.responses.filter(
-        (r) => allSolutionIds.includes(r.solutionId) && r.status === 'IMPLEMENTED'
-      );
-      const earned = implementedResponses.reduce((sum, r) => {
-        const sol = r.solution;
-        return sum + (sol?.points || 0);
-      }, 0);
-
+    // Group scores for display
+    const formattedChapterScores = (scores.chapterScores || []).map((score, index) => {
+      const chapter = chapters[index];
+      if (!chapter) return null;
       return {
-        number: ch.number,
-        title: ch.title,
-        totalCredits: totalAvailable,
-        earned: Math.min(earned, totalAvailable),
+        number: chapter.number,
+        title: chapter.title,
+        totalCredits: score.total,
+        earned: score.earned,
       };
-    });
+    }).filter(Boolean);
 
-    const totalEarned = chapterScores.reduce((sum, ch) => sum + ch.earned, 0);
-    const totalAvailable = chapterScores.reduce((sum, ch) => sum + ch.totalCredits, 0);
+    const totalAvailable = (chapters || []).reduce((sum, ch) => sum + (ch.totalCredits || 0), 0);
+    const scorePercentage = totalAvailable > 0 ? ((scores.totalScore + scores.totalBonus) / totalAvailable) * 100 : 0;
 
     return NextResponse.json({
       ...project,
-      chapterScores,
-      totalEarned,
+      userRole,
+      userStatus: membership?.status || 'ACTIVE', // Owners are always ACTIVE
+      chapterScores: formattedChapterScores,
+      totalEarned: scores.totalScore || 0,
       totalAvailable,
-      bonus: 0,
+      bonus: scores.totalBonus,
+      certificationStatus: {
+        failedSections: scores.failedSections,
+        missingMandatorySections: scores.missingMandatorySections,
+        activeSectionsCount: scores.activeSectionsCount,
+        scorePercentage,
+        isThresholdMet: scorePercentage >= 80,
+        isQualifying: scores.activeSectionsCount >= 1,
+        isMandatoryMet: scores.missingMandatorySections.length === 0,
+      }
     });
   } catch (error: any) {
-    console.error('Error fetching project:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    console.error('CRITICAL API ERROR:', error);
+    return NextResponse.json({ 
+      error: error.message || 'Internal server error',
+      stack: error.stack,
+      hint: 'Check scoring utility inputs andprisma relations'
+    }, { status: 500 });
   }
 }

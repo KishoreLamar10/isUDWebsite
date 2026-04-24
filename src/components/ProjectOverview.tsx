@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { ArrowLeft, Edit, Send, ClipboardCheck, Loader2 } from 'lucide-react';
 import Button from './ui/Button';
+import { PreliminaryProgress } from './PreliminaryProgress';
 
 interface ChapterScore {
   number: string;
@@ -38,6 +39,17 @@ interface ProjectData {
   totalEarned: number;
   totalAvailable: number;
   bonus: number;
+  userRole: string;
+  userStatus: string;
+  certificationStatus?: {
+    failedSections: string[];
+    missingMandatorySections: string[];
+    activeSectionsCount: number;
+    scorePercentage: number;
+    isThresholdMet: boolean;
+    isQualifying: boolean;
+    isMandatoryMet: boolean;
+  };
 }
 
 function CircleScore({ earned, total, size = 80 }: { earned: number; total: number; size?: number }) {
@@ -65,26 +77,43 @@ function CircleScore({ earned, total, size = 80 }: { earned: number; total: numb
   );
 }
 
-export default function ProjectOverview() {
-  const { id } = useParams();
+export default function ProjectOverview({ id: propId }: { id?: string }) {
+  const params = useParams();
+  const id = propId || params?.id as string;
   const [project, setProject] = useState<ProjectData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const isReadOnly = project?.userRole === 'VIEWER' || project?.userStatus === 'PENDING';
 
   useEffect(() => {
     const fetchProject = async () => {
+      if (!id) {
+        setErrorMessage('No project ID found in URL.');
+        setIsLoading(false);
+        return;
+      }
+
       try {
+        console.log(`[ProjectOverview] Fetching project: ${id}`);
         const response = await fetch(`/api/projects/${id}`);
+        
         if (response.ok) {
           const data = await response.json();
           setProject(data);
+        } else {
+          const errorData = await response.json().catch(() => ({}));
+          setErrorMessage(errorData.error || `Server responded with ${response.status}`);
+          if (response.status === 404) setProject(null);
         }
       } catch (error) {
         console.error('Error fetching project:', error);
+        setErrorMessage('Network error or server is down.');
       } finally {
         setIsLoading(false);
       }
     };
-    if (id) fetchProject();
+    fetchProject();
   }, [id]);
 
   if (isLoading) {
@@ -97,9 +126,13 @@ export default function ProjectOverview() {
 
   if (!project) {
     return (
-      <div className="text-center py-32">
-        <p className="text-slate-500">Project not found.</p>
-        <Link href="/" className="text-secondary underline mt-4 inline-block">Back to My Projects</Link>
+      <div className="text-center py-32 space-y-4">
+        <div className="p-4 bg-red-50 border border-red-200 rounded-md max-w-md mx-auto">
+          <p className="text-red-700 font-bold">Error: {errorMessage || 'Project Not Found'}</p>
+          <p className="text-xs text-red-600 mt-1 opacity-70">ID: {id}</p>
+        </div>
+        <p className="text-slate-500">We couldn't locate the project you're looking for.</p>
+        <Link href="/" className="text-secondary underline font-bold inline-block">Back to My Projects</Link>
       </div>
     );
   }
@@ -123,21 +156,32 @@ export default function ProjectOverview() {
 
       {/* Project Title + Actions */}
       <div className="bg-white border border-slate-200 rounded-sm px-6 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-sm">
-        <h1 className="text-xl font-bold text-primary tracking-tight">{project.projectName}</h1>
+        <div className="flex items-center gap-4">
+          <h1 className="text-xl font-bold text-primary tracking-tight">{project.projectName}</h1>
+          {isReadOnly && (
+            <span className="px-3 py-1 bg-slate-100 text-slate-500 text-[10px] font-bold uppercase tracking-widest rounded-full border border-slate-200">
+              Read-Only Mode
+            </span>
+          )}
+        </div>
         <div className="flex gap-3 flex-wrap">
           <Link href={`/projects/${id}/checklist`}>
             <Button variant="primary" className="gap-2 text-sm">
-              <ClipboardCheck size={16} /> Edit Checklist
+              <ClipboardCheck size={16} /> {isReadOnly ? 'View Checklist' : 'Edit Checklist'}
             </Button>
           </Link>
-          <Link href={`/projects/${id}/edit`}>
-            <Button variant="primary" className="gap-2 text-sm">
-              <Edit size={16} /> Edit Profile
-            </Button>
-          </Link>
-          <Button variant="primary" className="gap-2 text-sm bg-slate-700 hover:bg-slate-800">
-            <Send size={16} /> Submit Project
-          </Button>
+          {!isReadOnly && (
+            <>
+              <Link href={`/projects/${id}/edit`}>
+                <Button variant="primary" className="gap-2 text-sm">
+                  <Edit size={16} /> Edit Profile
+                </Button>
+              </Link>
+              <Button variant="primary" className="gap-2 text-sm bg-slate-700 hover:bg-slate-800">
+                <Send size={16} /> Submit Project
+              </Button>
+            </>
+          )}
         </div>
       </div>
 
@@ -181,11 +225,13 @@ export default function ProjectOverview() {
               <p><span className="font-bold text-slate-700">Site Area:</span> {project.siteArea || '0'} acres</p>
               <p><span className="font-bold text-slate-700">Building Area:</span> {project.buildingArea || '0'} sq.ft.</p>
             </div>
-            <div className="mt-4 flex justify-end">
-              <Link href={`/projects/${id}/edit`} className="text-xs text-secondary flex items-center gap-1 hover:underline">
-                <Edit size={12} /> Edit
-              </Link>
-            </div>
+            {!isReadOnly && (
+              <div className="mt-4 flex justify-end">
+                <Link href={`/projects/${id}/edit`} className="text-xs text-secondary flex items-center gap-1 hover:underline">
+                  <Edit size={12} /> Edit
+                </Link>
+              </div>
+            )}
           </div>
 
           {/* Contact Information */}
@@ -198,11 +244,13 @@ export default function ProjectOverview() {
               <p><span className="font-bold text-slate-700">Project Owner:</span> {project.ownerName || '—'}</p>
               <p><span className="font-bold text-slate-700">Architect:</span> {project.firmName || '—'}</p>
             </div>
-            <div className="mt-4 flex justify-end">
-              <Link href={`/projects/${id}/edit`} className="text-xs text-secondary flex items-center gap-1 hover:underline">
-                <Edit size={12} /> Edit
-              </Link>
-            </div>
+            {!isReadOnly && (
+              <div className="mt-4 flex justify-end">
+                <Link href={`/projects/${id}/edit`} className="text-xs text-secondary flex items-center gap-1 hover:underline">
+                  <Edit size={12} /> Edit
+                </Link>
+              </div>
+            )}
           </div>
         </div>
 
@@ -241,20 +289,24 @@ export default function ProjectOverview() {
               ))}
             </div>
 
-            <div className="mt-6 flex justify-end">
-              <Link href={`/projects/${id}/checklist`} className="text-xs text-secondary flex items-center gap-1 hover:underline">
-                <Edit size={12} /> Edit
-              </Link>
-            </div>
+            {!isReadOnly && (
+              <div className="mt-6 flex justify-end">
+                <Link href={`/projects/${id}/checklist`} className="text-xs text-secondary flex items-center gap-1 hover:underline">
+                  <Edit size={12} /> Edit
+                </Link>
+              </div>
+            )}
           </div>
 
           {/* Preliminary Certification Progress */}
-          <div className="bg-white border border-slate-200 rounded-sm p-6 shadow-sm">
-            <div className="flex justify-between items-center">
-              <h2 className="text-lg font-bold text-primary">Preliminary Certification Progress</h2>
-              <button className="text-2xl text-secondary font-bold leading-none">+</button>
-            </div>
-          </div>
+          {project.certificationStatus && (
+            <PreliminaryProgress 
+              projectId={id as string}
+              status={project.certificationStatus}
+              totalEarned={project.totalEarned}
+              bonus={project.bonus}
+            />
+          )}
         </div>
 
         {/* RIGHT COLUMN */}
@@ -274,14 +326,15 @@ export default function ProjectOverview() {
             </ul>
           </div>
 
-          {/* Certification */}
           <div className="bg-white border border-slate-200 rounded-sm p-6 shadow-sm">
             <h2 className="text-lg font-bold text-primary mb-2">Certification: <span className="font-normal">{project.certification}</span></h2>
-            <div className="mt-3 flex justify-end">
-              <Link href={`/projects/${id}/edit`} className="text-xs text-secondary flex items-center gap-1 hover:underline">
-                <Edit size={12} /> Edit
-              </Link>
-            </div>
+            {!isReadOnly && (
+              <div className="mt-3 flex justify-end">
+                <Link href={`/projects/${id}/edit`} className="text-xs text-secondary flex items-center gap-1 hover:underline">
+                  <Edit size={12} /> Edit
+                </Link>
+              </div>
+            )}
           </div>
 
           {/* Contact our UD Team */}
@@ -298,12 +351,14 @@ export default function ProjectOverview() {
             <h2 className="text-lg font-bold text-primary mb-3">Team Members</h2>
             <p className="text-sm text-slate-700">{project.contactName}</p>
             <div className="mt-4 flex justify-end gap-4">
-              <button className="text-xs text-secondary flex items-center gap-1 hover:underline">
-                <Edit size={12} /> Edit
-              </button>
-              <button className="text-xs text-secondary flex items-center gap-1 hover:underline">
-                + Add Member
-              </button>
+              <Link href={`/projects/${id}/team`} className="text-xs text-secondary flex items-center gap-1 hover:underline">
+                {isReadOnly ? <ClipboardCheck size={12} /> : <Edit size={12} />} {isReadOnly ? 'View Team' : 'Edit Team'}
+              </Link>
+              {!isReadOnly && (
+                <Link href={`/projects/${id}/team`} className="text-xs text-secondary flex items-center gap-1 hover:underline">
+                  + Add Member
+                </Link>
+              )}
             </div>
           </div>
         </div>

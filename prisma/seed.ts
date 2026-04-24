@@ -98,14 +98,14 @@ async function main() {
 
     if (hLevel === 'H2' || hLevel === 'H3') {
       const section = await prisma.section.upsert({
-        where: { number: h2Num },
+        where: { chapterId_number: { chapterId: chapter.id, number: h2Num } },
         update: { title: h2Title || '', totalCredits: h2Credits, minPoints1: min1, minPoints2: min2, minPoints3: min3, detailedInstruction: detailedInst },
         create: { number: h2Num, title: h2Title || '', totalCredits: h2Credits, chapterId: chapter.id, minPoints1: min1, minPoints2: min2, minPoints3: min3, detailedInstruction: detailedInst }
       })
 
       if (hLevel === 'H3') {
         await prisma.subSection.upsert({
-          where: { number: h3Num },
+          where: { sectionId_number: { sectionId: section.id, number: h3Num } },
           update: { title: h3Title, totalCredits: h3Credits },
           create: { number: h3Num, title: h3Title, totalCredits: h3Credits, sectionId: section.id }
         })
@@ -155,6 +155,7 @@ async function main() {
       const phasesStr = cols[17] || ''
       const points = parseFloat(cols[18]) || 0
       const instruction = cols[20] || ''
+      const isMandatory = cols[15] === 'Required' || cols[15] === 'Prerequisite'
 
       if (!standardNum) continue
 
@@ -172,7 +173,7 @@ async function main() {
       const min3 = parseInt(tsvRow?.[9]) || 0
 
       const section = await prisma.section.upsert({
-        where: { number: h2Num },
+        where: { chapterId_number: { chapterId: chapter.id, number: h2Num } },
         update: {},
         create: {
           number: h2Num, title: h2Title || '', totalCredits: h2Credits,
@@ -184,7 +185,7 @@ async function main() {
       let subId: string | null = null
       if (h3Num && h3Num !== '0' && h3Title) {
         const sub = await prisma.subSection.upsert({
-          where: { number: h3Num },
+          where: { sectionId_number: { sectionId: section.id, number: h3Num } },
           update: {},
           create: { number: h3Num, title: h3Title, totalCredits: h3Credits, sectionId: section.id }
         })
@@ -200,12 +201,12 @@ async function main() {
       const solution = await prisma.solution.upsert({
         where: { standardNumber: standardNum },
         update: {
-          text, points, instruction,
+          text, points, instruction, isMandatory,
           sectionId: section.id, subSectionId: subId,
           goals: { set: goalConnect }
         },
         create: {
-          refId, standardNumber: standardNum, text, points, instruction,
+          refId, standardNumber: standardNum, text, points, instruction, isMandatory,
           sectionId: section.id, subSectionId: subId,
           goals: { connect: goalConnect }
         }

@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useSession, signOut } from 'next-auth/react';
 import { FolderKanban, BookOpen, UserCircle, Home, LogOut, User } from 'lucide-react';
+import InvitationBanner from './InvitationBanner';
 
 const navItems = [
   { label: 'My Projects', href: '/', icon: FolderKanban },
@@ -15,7 +16,9 @@ export default function Header() {
   const { data: session } = useSession();
 
   return (
-    <header className="w-full bg-white border-b border-slate-200 sticky top-0 z-50">
+    <>
+      <InvitationBanner />
+      <header className="w-full bg-white border-b border-slate-200 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-20">
           {/* Logo Section */}
@@ -83,5 +86,6 @@ export default function Header() {
         </div>
       </div>
     </header>
+    </>
   );
 }

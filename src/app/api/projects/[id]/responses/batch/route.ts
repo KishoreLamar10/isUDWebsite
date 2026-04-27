@@ -16,61 +16,91 @@ export async function POST(
 
     const { id } = await params;
     const userId = (session.user as any).id;
+    const systemRole = (session.user as any).role;
     const { responses, toggles } = await req.json();
+    const responseItems = Array.isArray(responses) ? responses : [];
+    const toggleItems = Array.isArray(toggles) ? toggles : [];
 
     // Check if user is the owner OR a team member with ACTIVE status and EDITOR/ADMIN permission
-    const membership = await prisma.teamMember.findUnique({
-      where: {
-        projectId_email: {
-          projectId: id,
-          email: session.user.email?.toLowerCase() || '',
+    const project = await prisma.project.findUnique({
+      where: { id },
+      include: {
+        teamMembers: {
+          where: { userId },
         },
       },
-      include: { project: true }
     });
 
-    const isOwner = membership?.project.userId === userId;
+    if (!project) {
+      return NextResponse.json({ error: 'Project not found' }, { status: 404 });
+    }
+
+    let membership = project.teamMembers[0];
+
+    if (!membership && session.user.email) {
+      membership = await prisma.teamMember.findUnique({
+        where: {
+          projectId_email: {
+            projectId: id,
+            email: session.user.email.toLowerCase(),
+          },
+        },
+      }) as any;
+    }
+
+    const isOwner = project.userId === userId;
+    const isSystemAdmin = systemRole === 'ADMIN';
     const isEditorOrAdmin = membership?.status === 'ACTIVE' && (membership?.permission === 'EDITOR' || membership?.permission === 'ADMIN');
 
-    if (!isOwner && !isEditorOrAdmin) {
+    if (!isSystemAdmin && !isOwner && !isEditorOrAdmin) {
       return NextResponse.json({ error: 'Unauthorized: Read-only access or missing permissions' }, { status: 403 });
     }
 
-    // 1. Update Responses
-    for (const res of responses) {
-      await prisma.projectResponse.upsert({
-        where: {
-          projectId_solutionId: {
-            projectId: id,
-            solutionId: res.solutionId,
-          },
-        },
-        update: { status: res.status },
-        create: {
-          projectId: id,
-          solutionId: res.solutionId,
-          status: res.status,
-        },
-      });
-    }
+    const responseSolutionIds = responseItems
+      .map((item: any) => item.solutionId)
+      .filter((solutionId: unknown): solutionId is string => typeof solutionId === 'string');
+    const toggleSectionIds = toggleItems
+      .map((item: any) => item.sectionId)
+      .filter((sectionId: unknown): sectionId is string => typeof sectionId === 'string');
 
-    // 2. Update Toggles
-    for (const t of toggles) {
-      await prisma.sectionToggle.upsert({
+    await prisma.$transaction([
+      prisma.projectResponse.deleteMany({
         where: {
-          projectId_sectionId: {
-            projectId: id,
-            sectionId: t.sectionId,
-          },
-        },
-        update: { isEnabled: t.isEnabled },
-        create: {
           projectId: id,
-          sectionId: t.sectionId,
-          isEnabled: t.isEnabled,
+          solutionId: { in: responseSolutionIds },
         },
-      });
-    }
+      }),
+      ...(responseItems.length > 0
+        ? [
+            prisma.projectResponse.createMany({
+              data: responseItems.map((item: any) => ({
+                projectId: id,
+                solutionId: item.solutionId,
+                status: item.status,
+              })),
+              skipDuplicates: true,
+            }),
+          ]
+        : []),
+      prisma.sectionToggle.deleteMany({
+        where: {
+          projectId: id,
+          sectionId: { in: toggleSectionIds },
+        },
+      }),
+      ...(toggleItems.length > 0
+        ? [
+            prisma.sectionToggle.createMany({
+              data: toggleItems.map((item: any) => ({
+                projectId: id,
+                sectionId: item.sectionId,
+                isEnabled: Boolean(item.isEnabled),
+              })),
+              skipDuplicates: true,
+            }),
+          ]
+        : []),
+    ]);
 
     // 3. Recalculate Score
     const chapters = await prisma.chapter.findMany({

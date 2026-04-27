@@ -10,7 +10,6 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const userId = (session.user as any).id;
     const email = session.user.email?.toLowerCase();
 
     if (!email) {

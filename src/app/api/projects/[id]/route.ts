@@ -18,8 +18,6 @@ export async function GET(
     const userId = (session.user as any).id;
     const systemRole = (session.user as any).role;
 
-    console.log(`[Project Detail API] User ${userId} is requesting project ${id}`);
-
     // Check if user is the owner OR a team member with ACTIVE status
     const project = await prisma.project.findFirst({
       where: {
@@ -51,7 +49,6 @@ export async function GET(
     });
 
     if (!project) {
-      console.warn(`[Project Detail API] Warning: Project ${id} NOT FOUND or NO ACCESS for user ${userId}.`);
       return NextResponse.json({ error: 'Project not found or access denied' }, { status: 404 });
     }
 
@@ -59,8 +56,6 @@ export async function GET(
     // Default to ADMIN if they are the Project.userId (owner)
     const membership = project.teamMembers[0];
     const userRole = systemRole === 'ADMIN' || project.userId === userId ? 'ADMIN' : (membership?.permission || 'VIEWER');
-
-    console.log(`[Project Detail API] Found project: "${project.projectName}"`);
 
     // Calculate scores using universal utility
     const chapters = await prisma.chapter.findMany({
@@ -121,7 +116,7 @@ export async function GET(
     return NextResponse.json({ 
       error: error.message || 'Internal server error',
       stack: error.stack,
-      hint: 'Check scoring utility inputs andprisma relations'
+      hint: 'Check scoring utility inputs and Prisma relations'
     }, { status: 500 });
   }
 }

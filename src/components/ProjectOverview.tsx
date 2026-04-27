@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { ArrowLeft, Edit, Send, ClipboardCheck, Loader2 } from 'lucide-react';
+import { Edit, Send, ClipboardCheck, Loader2 } from 'lucide-react';
 import Button from './ui/Button';
 import { PreliminaryProgress } from './PreliminaryProgress';
 
@@ -96,7 +96,6 @@ export default function ProjectOverview({ id: propId }: { id?: string }) {
       }
 
       try {
-        console.log(`[ProjectOverview] Fetching project: ${id}`);
         const response = await fetch(`/api/projects/${id}`);
         
         if (response.ok) {
@@ -144,7 +143,7 @@ export default function ProjectOverview({ id: propId }: { id?: string }) {
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-sm">
         <Link href="/" className="text-secondary font-bold hover:underline">My Projects</Link>
-        <span className="text-slate-400">›</span>
+        <span className="text-slate-400">&gt;</span>
         <span className="font-bold text-slate-800">Project Overview</span>
       </div>
 
@@ -223,11 +222,11 @@ export default function ProjectOverview({ id: propId }: { id?: string }) {
             <h2 className="text-lg font-bold text-primary mb-4">Project Information</h2>
             <div className="space-y-2 text-sm">
               <p><span className="font-bold text-slate-700">Title:</span> {project.projectName}</p>
-              <p><span className="font-bold text-slate-700">Address:</span> {project.address1 || '—'}</p>
-              <p className="text-secondary font-bold">City: <span className="text-slate-800 font-normal">{project.city || '—'}</span></p>
-              <p className="text-secondary font-bold">State: <span className="text-slate-800 font-normal">{project.state || '—'}</span></p>
+              <p><span className="font-bold text-slate-700">Address:</span> {project.address1 || '-'}</p>
+              <p className="text-secondary font-bold">City: <span className="text-slate-800 font-normal">{project.city || '-'}</span></p>
+              <p className="text-secondary font-bold">State: <span className="text-slate-800 font-normal">{project.state || '-'}</span></p>
               <p><span className="font-bold text-slate-700">Country:</span> {project.country}</p>
-              <p className="text-secondary font-bold">ZIP Code: <span className="text-slate-800 font-normal">{project.zip || '—'}</span></p>
+              <p className="text-secondary font-bold">ZIP Code: <span className="text-slate-800 font-normal">{project.zip || '-'}</span></p>
               <p><span className="font-bold text-slate-700">Site Area:</span> {project.siteArea || '0'} acres</p>
               <p><span className="font-bold text-slate-700">Building Area:</span> {project.buildingArea || '0'} sq.ft.</p>
             </div>
@@ -247,8 +246,8 @@ export default function ProjectOverview({ id: propId }: { id?: string }) {
               <p><span className="font-bold text-slate-700">Name:</span> {project.contactName}</p>
               <p><span className="font-bold text-slate-700">Email:</span> {project.contactEmail}</p>
               <p><span className="font-bold text-slate-700">Telephone:</span> {project.telephone}</p>
-              <p><span className="font-bold text-slate-700">Project Owner:</span> {project.ownerName || '—'}</p>
-              <p><span className="font-bold text-slate-700">Architect:</span> {project.firmName || '—'}</p>
+              <p><span className="font-bold text-slate-700">Project Owner:</span> {project.ownerName || '-'}</p>
+              <p><span className="font-bold text-slate-700">Architect:</span> {project.firmName || '-'}</p>
             </div>
             {!isReadOnly && (
               <div className="mt-4 flex justify-end">
@@ -324,7 +323,7 @@ export default function ProjectOverview({ id: propId }: { id?: string }) {
             <ul className="space-y-1 text-sm text-slate-700">
               {project.services.length > 0 ? (
                 project.services.map((s) => (
-                  <li key={s}>• {s}</li>
+                  <li key={s}>- {s}</li>
                 ))
               ) : (
                 <li className="text-slate-400 italic">No services selected</li>

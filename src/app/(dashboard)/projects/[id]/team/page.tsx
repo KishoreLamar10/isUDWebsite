@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, Loader2, Trash2, UserPlus } from 'lucide-react';
 import Button from '@/components/ui/Button';
@@ -69,11 +69,7 @@ export default function ProjectTeamPage() {
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchData();
-  }, [projectId]);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       const [teamRes, projectRes] = await Promise.all([
         fetch(`/api/projects/${projectId}/team`),
@@ -89,7 +85,11 @@ export default function ProjectTeamPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [projectId]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const handleInvite = async (data: { email: string; permission: string; role: string }) => {
     const res = await fetch(`/api/projects/${projectId}/team`, {

@@ -15,24 +15,27 @@ export async function GET(
 
     const { id } = await params;
     const userId = (session.user as any).id;
-
-    console.log(`[API Lookup] Project: ${id}, User: ${userId}`);
+    const systemRole = (session.user as any).role;
 
     // Check if user is the owner OR a team member with ACTIVE status
     const project = await prisma.project.findFirst({
       where: {
         id,
-        OR: [
-          { userId },
-          { 
-            teamMembers: { 
-              some: { 
-                userId,
-                status: 'ACTIVE'
-              } 
-            } 
-          }
-        ]
+        ...(systemRole === 'ADMIN'
+          ? {}
+          : {
+              OR: [
+                { userId },
+                { 
+                  teamMembers: { 
+                    some: { 
+                      userId,
+                      status: 'ACTIVE'
+                    } 
+                  } 
+                }
+              ]
+            })
       },
       include: {
         teamMembers: {
@@ -46,7 +49,7 @@ export async function GET(
     }
 
     const membership = project.teamMembers[0];
-    const userRole = project.userId === userId ? 'ADMIN' : (membership?.permission || 'VIEWER');
+    const userRole = systemRole === 'ADMIN' || project.userId === userId ? 'ADMIN' : (membership?.permission || 'VIEWER');
     const userStatus = membership?.status || 'ACTIVE';
 
     // Fetch full hierarchy

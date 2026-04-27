@@ -8,7 +8,6 @@ import { HelpCircle } from 'lucide-react';
 interface SectionListProps {
   chapter: any;
   responses: Record<string, ResponseStatus>;
-  toggles: Record<string, boolean>;
   allPhases: any[];
   allGoals: any[];
   onStatusChange: (solutionId: string, status: ResponseStatus) => void;
@@ -19,7 +18,6 @@ interface SectionListProps {
 export const ChecklistSectionList: React.FC<SectionListProps> = ({
   chapter,
   responses,
-  toggles,
   allPhases,
   allGoals,
   onStatusChange,

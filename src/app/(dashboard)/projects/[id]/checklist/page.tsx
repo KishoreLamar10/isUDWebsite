@@ -1,22 +1,22 @@
 'use client';
 
-import React, { useEffect, useState, use } from 'react';
+import React, { useEffect, useState, use, useCallback, useRef } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { ChecklistSidebar } from '@/components/ChecklistSidebar';
 import { ChecklistSectionList } from '@/components/ChecklistSectionList';
 import { ResponseStatus } from '@prisma/client';
-import { Printer, Save, RotateCcw, ChevronRight } from 'lucide-react';
+import { Printer, ChevronRight, CheckCircle2, AlertCircle } from 'lucide-react';
 
 interface Params {
   id: string;
 }
 
 export default function ChecklistPage({ params }: { params: Promise<Params> }) {
-  const router = useRouter();
   const { id } = use(params);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState(false);
+  const [hasSaved, setHasSaved] = useState(false);
   
   const [chapters, setChapters] = useState<any[]>([]);
   const [activeChapterId, setActiveChapterId] = useState<string>('');
@@ -25,26 +25,30 @@ export default function ChecklistPage({ params }: { params: Promise<Params> }) {
   
   // Local state for edits
   const [responses, setResponses] = useState<Record<string, ResponseStatus>>({});
-  const [toggles, setToggles] = useState<Record<string, boolean>>({});
+  const responsesRef = useRef<Record<string, ResponseStatus>>({});
+  const togglesRef = useRef<Record<string, boolean>>({});
+  const dirtyResponsesRef = useRef<Record<string, ResponseStatus>>({});
+  const dirtyTogglesRef = useRef<Record<string, boolean>>({});
+  const saveRequestRef = useRef(0);
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const saveInFlightRef = useRef(false);
+  const savePendingRef = useRef(false);
   
-  // Original state for "Clear"
-  const [originalResponses, setOriginalResponses] = useState<Record<string, ResponseStatus>>({});
-  const [originalToggles, setOriginalToggles] = useState<Record<string, boolean>>({});
-
   const [userRole, setUserRole] = useState<string>('VIEWER');
   const [userStatus, setUserStatus] = useState<string>('PENDING');
+  const [errorMessage, setErrorMessage] = useState<string>('');
 
-  useEffect(() => {
-    fetchData();
-  }, [id]);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true);
+      setErrorMessage('');
       const res = await fetch(`/api/projects/${id}/checklist`);
       const data = await res.json();
       
-      if (data.error) throw new Error(data.error);
+      if (!res.ok || data.error) {
+        setErrorMessage(data.error || 'Unable to load checklist.');
+        return;
+      }
 
       setChapters(data.chapters);
       if (data.chapters.length > 0) setActiveChapterId(data.chapters[0].id);
@@ -56,64 +60,147 @@ export default function ChecklistPage({ params }: { params: Promise<Params> }) {
       const resMap: Record<string, ResponseStatus> = {};
       data.responses.forEach((r: any) => resMap[r.solutionId] = r.status);
       setResponses(resMap);
-      setOriginalResponses(resMap);
+      responsesRef.current = resMap;
 
       const toggleMap: Record<string, boolean> = {};
       data.toggles.forEach((t: any) => toggleMap[t.sectionId] = t.isEnabled);
-      setToggles(toggleMap);
-      setOriginalToggles(toggleMap);
+      togglesRef.current = toggleMap;
 
-    } catch (err) {
-      console.error(err);
+    } catch {
+      setErrorMessage('Unable to load checklist. Please try again.');
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  const saveLatestChecklist = useCallback(async () => {
+    if (saveInFlightRef.current) {
+      savePendingRef.current = true;
+      return;
+    }
+
+    const requestId = saveRequestRef.current + 1;
+    saveRequestRef.current = requestId;
+    saveInFlightRef.current = true;
+    savePendingRef.current = false;
+
+    const responseChanges = { ...dirtyResponsesRef.current };
+    const toggleChanges = { ...dirtyTogglesRef.current };
+    dirtyResponsesRef.current = {};
+    dirtyTogglesRef.current = {};
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000);
+
+    try {
+      setSaving(true);
+      setSaveError(false);
+
+      const res = await fetch(`/api/projects/${id}/responses/batch`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
+        body: JSON.stringify({
+          responses: Object.entries(responseChanges).map(([solutionId, status]) => ({ solutionId, status })),
+          toggles: Object.entries(toggleChanges).map(([sectionId, isEnabled]) => ({ sectionId, isEnabled })),
+        }),
+      });
+
+      if (!res.ok) {
+        dirtyResponsesRef.current = { ...responseChanges, ...dirtyResponsesRef.current };
+        dirtyTogglesRef.current = { ...toggleChanges, ...dirtyTogglesRef.current };
+        if (requestId === saveRequestRef.current) setSaveError(true);
+        return;
+      }
+
+      if (requestId === saveRequestRef.current) setHasSaved(true);
+    } catch {
+      dirtyResponsesRef.current = { ...responseChanges, ...dirtyResponsesRef.current };
+      dirtyTogglesRef.current = { ...toggleChanges, ...dirtyTogglesRef.current };
+      if (requestId === saveRequestRef.current) setSaveError(true);
+    } finally {
+      clearTimeout(timeout);
+      saveInFlightRef.current = false;
+
+      if (savePendingRef.current) {
+        saveLatestChecklist();
+        return;
+      }
+
+      if (requestId === saveRequestRef.current) setSaving(false);
+    }
+  }, [id]);
+
+  const hasPendingSave = useCallback(() => {
+    return (
+      saving ||
+      saveInFlightRef.current ||
+      Boolean(saveTimerRef.current) ||
+      Object.keys(dirtyResponsesRef.current).length > 0 ||
+      Object.keys(dirtyTogglesRef.current).length > 0
+    );
+  }, [saving]);
+
+  const confirmNavigation = useCallback(() => {
+    if (!hasPendingSave()) return true;
+    return window.confirm('Checklist changes are still saving. Leave this page anyway?');
+  }, [hasPendingSave]);
+
+  const scheduleAutoSave = useCallback(() => {
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+
+    setSaving(true);
+    setSaveError(false);
+    saveTimerRef.current = setTimeout(() => {
+      saveLatestChecklist();
+    }, 500);
+  }, [saveLatestChecklist]);
+
+  useEffect(() => {
+    return () => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      if (!hasPendingSave()) return;
+
+      event.preventDefault();
+      event.returnValue = '';
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [hasPendingSave]);
 
   const handleStatusChange = (solId: string, status: ResponseStatus) => {
-    setResponses((prev) => ({ ...prev, [solId]: status }));
+    const nextResponses = { ...responsesRef.current, [solId]: status };
+    responsesRef.current = nextResponses;
+    dirtyResponsesRef.current = { ...dirtyResponsesRef.current, [solId]: status };
+    setResponses(nextResponses);
+    scheduleAutoSave();
   };
 
   const handleToggleChange = (section: any, enabled: boolean) => {
     // 1. Update the toggle state (for exclusion logic if still used by backend)
-    setToggles((prev) => ({ ...prev, [section.id]: enabled }));
+    const nextToggles = { ...togglesRef.current, [section.id]: enabled };
+    togglesRef.current = nextToggles;
+    dirtyTogglesRef.current = { ...dirtyTogglesRef.current, [section.id]: enabled };
 
     // 2. Bulk update all solutions in this section
-    const newResponses = { ...responses };
+    const newResponses = { ...responsesRef.current };
     section.solutions.forEach((sol: any) => {
       newResponses[sol.id] = enabled ? 'IMPLEMENTED' as ResponseStatus : 'NOT_IMPLEMENTED' as ResponseStatus;
+      dirtyResponsesRef.current[sol.id] = newResponses[sol.id];
     });
+    responsesRef.current = newResponses;
     setResponses(newResponses);
-  };
-
-
-  const handleSave = async () => {
-    try {
-      setSaving(true);
-      const res = await fetch(`/api/projects/${id}/responses/batch`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          responses: Object.entries(responses).map(([solutionId, status]) => ({ solutionId, status })),
-          toggles: Object.entries(toggles).map(([sectionId, isEnabled]) => ({ sectionId, isEnabled })),
-        }),
-      });
-
-      if (res.ok) {
-        setOriginalResponses({ ...responses });
-        setOriginalToggles({ ...toggles });
-        router.refresh();
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleClear = () => {
-    setResponses({ ...originalResponses });
-    setToggles({ ...originalToggles });
+    scheduleAutoSave();
   };
 
   if (loading) {
@@ -131,14 +218,34 @@ export default function ChecklistPage({ params }: { params: Promise<Params> }) {
 
   const isReadOnly = userRole === 'VIEWER' || userStatus === 'PENDING';
 
+  if (errorMessage) {
+    return (
+      <div className="min-h-[calc(100vh-80px)] bg-slate-50 px-6 py-10">
+        <div className="mx-auto max-w-3xl rounded-sm border border-slate-200 bg-white p-8 shadow-sm">
+          <p className="text-xs font-bold uppercase tracking-widest text-secondary">Checklist unavailable</p>
+          <h1 className="mt-3 text-2xl font-bold text-primary">We could not open this project checklist.</h1>
+          <p className="mt-3 text-sm leading-6 text-slate-600">{errorMessage}</p>
+          <div className="mt-6 flex gap-3">
+            <Link href={`/projects/${id}`} className="rounded-sm bg-primary px-5 py-2 text-sm font-bold text-white transition-colors hover:bg-[#00264d]">
+              Project Overview
+            </Link>
+            <Link href="/" className="rounded-sm border border-slate-200 bg-white px-5 py-2 text-sm font-bold text-primary transition-colors hover:border-secondary">
+              My Projects
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col h-[calc(100vh-80px)]">
       {/* Top Header Bar */}
       <div className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8 shrink-0">
         <div className="flex items-center gap-3 text-sm text-slate-500 font-medium">
-          <Link href="/" className="hover:text-primary transition-colors">My Projects</Link>
+          <Link href="/" onClick={(event) => !confirmNavigation() && event.preventDefault()} className="hover:text-primary transition-colors">My Projects</Link>
           <ChevronRight className="w-4 h-4 opacity-40" />
-          <Link href={`/projects/${id}`} className="hover:text-primary transition-colors">Project Overview</Link>
+          <Link href={`/projects/${id}`} onClick={(event) => !confirmNavigation() && event.preventDefault()} className="hover:text-primary transition-colors">Project Overview</Link>
           <ChevronRight className="w-4 h-4 opacity-40" />
           <span className="text-slate-900">{isReadOnly ? 'View Checklist' : 'Edit Checklist'}</span>
           {isReadOnly && (
@@ -158,24 +265,34 @@ export default function ChecklistPage({ params }: { params: Promise<Params> }) {
           </button>
 
           {!isReadOnly && (
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              className="flex items-center gap-2 px-6 h-10 bg-primary text-white rounded-md text-sm font-extrabold hover:bg-primary-dark transition-all shadow-lg shadow-primary/20 active:scale-95 disabled:opacity-50"
-            >
-              <Save className={`w-4 h-4 ${saving ? 'animate-pulse' : ''}`} />
-              {saving ? 'Saving...' : 'Save Checklist'}
-            </button>
+            <div className={`flex h-10 items-center gap-2 rounded-md px-4 text-sm font-bold ${
+              saveError
+                ? 'bg-red-50 text-red-700 border border-red-100'
+                : saving
+                  ? 'bg-slate-100 text-slate-600'
+                  : hasSaved
+                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-100'
+                    : 'bg-slate-50 text-slate-500 border border-slate-100'
+            }`}>
+              {saveError ? (
+                <AlertCircle className="h-4 w-4" />
+              ) : (
+                <CheckCircle2 className={`h-4 w-4 ${saving ? 'animate-pulse' : ''}`} />
+              )}
+              {saveError ? 'Save failed' : saving ? 'Saving...' : hasSaved ? 'Saved' : 'Auto-save on'}
+            </div>
           )}
         </div>
       </div>
 
       {/* Main Content Area */}
       <div className="flex flex-1 overflow-hidden bg-slate-50">
-        <ChecklistSidebar 
+          <ChecklistSidebar 
           chapters={chapters} 
           activeChapterId={activeChapterId} 
-          onChapterSelect={setActiveChapterId} 
+          onChapterSelect={(chapterId) => {
+            if (confirmNavigation()) setActiveChapterId(chapterId);
+          }} 
         />
 
         <div className="flex-1 overflow-y-auto relative bg-[#f8fafc]">
@@ -183,7 +300,6 @@ export default function ChecklistPage({ params }: { params: Promise<Params> }) {
             <ChecklistSectionList 
               chapter={activeChapter}
               responses={responses}
-              toggles={toggles}
               allPhases={allPhases}
               allGoals={allGoals}
               onStatusChange={handleStatusChange}

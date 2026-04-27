@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Mail, Phone, ShieldCheck, Loader2, Camera } from 'lucide-react';
+import { Loader2, Camera } from 'lucide-react';
 import Button from './ui/Button';
 import Link from 'next/link';
 

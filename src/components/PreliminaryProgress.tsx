@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { CheckCircle2, XCircle, ChevronDown, ChevronUp, ExternalLink } from 'lucide-react';
+import { Check, Edit3, Minus, Plus, X } from 'lucide-react';
 import Link from 'next/link';
 
 interface PreliminaryProgressProps {
@@ -19,157 +19,117 @@ interface PreliminaryProgressProps {
   bonus: number;
 }
 
+function ResultIcon({ passed }: { passed: boolean }) {
+  return (
+    <div
+      className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-[3px] bg-white ${
+        passed ? 'border-emerald-500 text-emerald-600' : 'border-red-500 text-red-600'
+      }`}
+    >
+      {passed ? <Check className="h-7 w-7 stroke-[4]" /> : <X className="h-7 w-7 stroke-[4]" />}
+    </div>
+  );
+}
+
+function BulletColumns({ items }: { items: string[] }) {
+  if (items.length === 0) return null;
+
+  return (
+    <ul className="mt-2 grid grid-cols-2 gap-x-8 gap-y-1 pl-12 text-[14px] leading-[1.35] text-slate-900 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+      {items.map((item) => (
+        <li key={item} className="list-disc whitespace-nowrap pl-1">
+          {item}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 export const PreliminaryProgress: React.FC<PreliminaryProgressProps> = ({
   projectId,
   status,
   totalEarned,
   bonus,
 }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
-
-  const pillars = [
-    {
-      id: 'sections',
-      title: 'Available Sections',
-      description: status.isQualifying 
-        ? 'You selected enough sections to qualify for self-assessment.' 
-        : 'Select at least one section to begin self-assessment.',
-      isMet: status.isQualifying,
-      details: null,
-    },
-    {
-      id: 'credits',
-      title: 'Earned Credit',
-      description: `Your project requires a minimum score of 80% to be eligible for certification. You earned ${totalEarned} credits and ${bonus} bonus credits.`,
-      isMet: status.isThresholdMet,
-      details: status.failedSections.length > 0 ? {
-        title: 'Sections without credit:',
-        items: status.failedSections,
-      } : null,
-    },
-    {
-      id: 'mandatory',
-      title: 'Required Solutions',
-      description: status.isMandatoryMet 
-        ? 'All required solutions for this project have been satisfied.' 
-        : 'One or more required solutions have not been implemented.',
-      isMet: status.isMandatoryMet,
-      details: status.missingMandatorySections.length > 0 ? {
-        title: 'Sections with missing required solutions:',
-        items: status.missingMandatorySections,
-      } : null,
-    },
-  ];
+  const [isExpanded, setIsExpanded] = useState(true);
+  const roundedScore = Math.round(status.scorePercentage);
+  const finalScoreText = `${roundedScore}%`;
+  const earnedCreditText = status.isThresholdMet
+    ? `Based on the solutions selected, you earned ${totalEarned} credits and ${bonus} bonus credits. Your projected final score is ${finalScoreText}.`
+    : `Based on the solutions selected, you earned ${totalEarned} credits and ${bonus} bonus credits. Your projected final score is ${finalScoreText}.This is insufficient to qualify for self-assessment. This project requires a minimum score of 78%. The sections listed below did not earn any credit. Please review these sections and implement additional solutions.`;
 
   return (
-    <div className="bg-white border border-slate-200 rounded-sm shadow-sm overflow-hidden mb-6">
-      {/* Header */}
+    <section className="overflow-hidden rounded-sm border border-slate-200 bg-white text-slate-900 shadow-sm">
       <button
-        onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full flex items-center justify-between p-4 bg-slate-50 hover:bg-slate-100 transition-colors border-b border-slate-200"
+        type="button"
+        onClick={() => setIsExpanded((value) => !value)}
+        className="flex w-full items-center justify-between border-b border-slate-200 bg-slate-50 px-5 py-3 text-left transition-colors hover:bg-slate-100"
       >
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-            {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
-          </div>
-          <h3 className="font-bold text-slate-800 uppercase tracking-wider text-sm">
-            Preliminary Certification Progress
-          </h3>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="flex -space-x-1">
-            {pillars.map((p) => (
-              <div 
-                key={p.id}
-                className={`w-3 h-3 rounded-full border-2 border-white ${p.isMet ? 'bg-emerald-500' : 'bg-rose-500'}`}
-              />
-            ))}
-          </div>
-        </div>
+        <h2 className="text-[18px] font-bold leading-none text-primary">
+          Preliminary Certification Progress
+        </h2>
+        <span className="mr-1 text-primary">
+          {isExpanded ? <Minus className="h-5 w-5 stroke-[4]" /> : <Plus className="h-5 w-5 stroke-[4]" />}
+        </span>
       </button>
 
-      {/* Content */}
       {isExpanded && (
-        <div className="p-6 space-y-8 animate-in fade-in slide-in-from-top-2 duration-300">
-          {pillars.map((pillar) => (
-            <div key={pillar.id} className="space-y-4">
-              <div className="flex gap-4 items-start">
-                <div className="shrink-0 mt-1">
-                  {pillar.isMet ? (
-                    <CheckCircle2 className="w-6 h-6 text-emerald-500" />
-                  ) : (
-                    <XCircle className="w-6 h-6 text-rose-500" />
-                  )}
-                </div>
-                <div className="flex-1 space-y-1">
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-bold text-slate-900">{pillar.title}</h4>
-                    <Link 
-                      href={`/projects/${projectId}/checklist`}
-                      className="text-[11px] font-bold text-secondary uppercase tracking-widest flex items-center gap-1 hover:underline"
-                    >
-                      Edit solutions <ExternalLink className="w-3 h-3" />
-                    </Link>
-                  </div>
-                  <p className="text-[14px] text-slate-600 leading-relaxed">
-                    {pillar.description}
-                  </p>
-                </div>
-              </div>
-
-              {/* Detail Lists */}
-              {pillar.details && (
-                <div className="ml-10 bg-slate-50 border border-slate-100 rounded-sm p-4">
-                  <p className="text-[12px] font-bold text-slate-500 uppercase tracking-wider mb-3">
-                    {pillar.details.title}
-                  </p>
-                  <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-2">
-                    {pillar.details.items.map((item) => (
-                      <div 
-                        key={item}
-                        className="bg-white border border-slate-200 rounded py-1 px-2 text-center text-xs font-mono font-bold text-slate-700 shadow-sm"
-                      >
-                        {item}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+        <div className="space-y-8 px-8 pb-8 pt-6">
+          <div className="flex gap-4">
+            <ResultIcon passed={status.isQualifying} />
+            <div className="min-w-0 flex-1">
+              <h3 className="text-[20px] font-bold leading-tight text-slate-900">Available Sections:</h3>
+              <p className="mt-2 text-[15px] leading-[1.45] text-slate-700">
+                {status.isQualifying
+                  ? 'You selected enough sections to qualify for self-assessment.'
+                  : 'You have not selected enough sections to qualify for self-assessment.'}
+              </p>
             </div>
-          ))}
+          </div>
 
-          {/* Progress Summary Footer */}
-          <div className="pt-6 border-t border-slate-100 flex items-center justify-between">
-            <div className="space-y-1">
-              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Global Score</p>
-              <div className="flex items-center gap-3">
-                <div className="text-3xl font-black text-primary font-mono">
-                  {Math.round(status.scorePercentage)}%
-                </div>
-                <div className="h-2 w-32 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
-                  <div 
-                    className={`h-full transition-all duration-1000 ${status.isThresholdMet ? 'bg-emerald-500' : 'bg-amber-500'}`}
-                    style={{ width: `${Math.min(100, status.scorePercentage)}%` }}
-                  />
-                </div>
-              </div>
+          <div className="flex gap-4">
+            <ResultIcon passed={status.isThresholdMet} />
+            <div className="min-w-0 flex-1">
+              <h3 className="text-[20px] font-bold leading-tight text-slate-900">Earned Credit:</h3>
+              <p className="mt-2 max-w-[680px] text-[15px] leading-[1.7] text-slate-700">
+                {earnedCreditText}
+              </p>
+              {!status.isThresholdMet && <BulletColumns items={status.failedSections} />}
+              <Link
+                href={`/projects/${projectId}/checklist`}
+                className="mt-4 inline-flex items-center gap-2 text-[15px] font-bold text-primary hover:text-secondary hover:underline"
+              >
+                <span className="flex h-5 w-5 items-center justify-center rounded border border-primary bg-white">
+                  <Edit3 className="h-3.5 w-3.5" />
+                </span>
+                Edit Solutions
+              </Link>
             </div>
-            
-            <div className="text-right">
-              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1">Status</p>
-              <div className={`inline-flex items-center px-3 py-1 rounded-full text-[12px] font-bold uppercase tracking-wider ${
-                status.isThresholdMet && status.isMandatoryMet && status.isQualifying
-                  ? 'bg-emerald-100 text-emerald-700'
-                  : 'bg-rose-100 text-rose-700'
-              }`}>
-                {status.isThresholdMet && status.isMandatoryMet && status.isQualifying 
-                  ? 'Ready for Review' 
-                  : 'In Progress'}
-              </div>
+          </div>
+
+          <div className="flex gap-4">
+            <ResultIcon passed={status.isMandatoryMet} />
+            <div className="min-w-0 flex-1">
+              <h3 className="text-[20px] font-bold leading-tight text-slate-900">Required Solutions:</h3>
+              <p className="mt-2 max-w-[680px] text-[15px] leading-[1.55] text-slate-700">
+                {status.isMandatoryMet
+                  ? 'You have selected all required solutions.'
+                  : 'You have not selected all required solutions. Please review the following sections to ensure all required solutions are implemented.'}
+              </p>
+              {!status.isMandatoryMet && <BulletColumns items={status.missingMandatorySections} />}
+              <Link
+                href={`/projects/${projectId}/checklist`}
+                className="mt-4 inline-flex items-center gap-2 text-[15px] font-bold text-primary hover:text-secondary hover:underline"
+              >
+                <span className="flex h-5 w-5 items-center justify-center rounded border border-primary bg-white">
+                  <Edit3 className="h-3.5 w-3.5" />
+                </span>
+                Edit Solutions
+              </Link>
             </div>
           </div>
         </div>
       )}
-    </div>
+    </section>
   );
 };

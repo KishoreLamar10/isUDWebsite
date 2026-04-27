@@ -1,5 +1,4 @@
 import Header from "@/components/Header";
-import Footer from "@/components/Footer";
 
 export default function DashboardLayout({
   children,
@@ -12,7 +11,6 @@ export default function DashboardLayout({
       <main className="flex-grow">
         {children}
       </main>
-      <Footer />
     </div>
   );
 }

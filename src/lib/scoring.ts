@@ -34,6 +34,95 @@ export type ToggleData = {
   isEnabled: boolean;
 };
 
+const preliminaryApplicableSections = new Set([
+  '2.1',
+  '2.2',
+  '2.3',
+  '2.4',
+  '3.1',
+  '3.2',
+  '3.3',
+  '3.4',
+  '3.5',
+  '3.6',
+  '3.7',
+  '3.8',
+  '3.9',
+  '3.10',
+  '3.11',
+  '3.12',
+  '4.2',
+  '4.4',
+  '5.1',
+  '5.2',
+  '5.3',
+  '5.4',
+  '5.5',
+  '5.6',
+  '5.8',
+  '6.1',
+  '6.3',
+  '6.4',
+  '6.5',
+  '6.6',
+  '6.7',
+  '6.9',
+  '6.11',
+  '6.12',
+  '6.13',
+  '6.14',
+  '6.15',
+  '6.16',
+  '7.1',
+  '7.2',
+  '7.3',
+  '7.4',
+  '7.5',
+  '7.6',
+  '7.7',
+  '7.8',
+  '7.9',
+  '7.10',
+  '7.11',
+  '7.12',
+  '8.1',
+  '8.2',
+  '8.3',
+  '8.4',
+  '8.5',
+  '8.6',
+  '9.1',
+  '9.2',
+  '9.3',
+]);
+
+function compareStandardNumbers(a: string, b: string) {
+  const aParts = a.split('.').map((part) => Number(part));
+  const bParts = b.split('.').map((part) => Number(part));
+  const length = Math.max(aParts.length, bParts.length);
+
+  for (let i = 0; i < length; i++) {
+    const aValue = aParts[i] ?? -1;
+    const bValue = bParts[i] ?? -1;
+
+    if (aValue !== bValue) return aValue - bValue;
+  }
+
+  return a.localeCompare(b);
+}
+
+function getDisplaySectionNumber(chapterNumber: string, sectionNumber: string) {
+  return `${chapterNumber}.${sectionNumber}`;
+}
+
+function getRequiredDisplayNumber(standardNumber: string, fallbackSectionNumber: string) {
+  const parts = standardNumber.split('.');
+
+  if (parts.length <= 2) return standardNumber || fallbackSectionNumber;
+
+  return parts.slice(0, -1).join('.');
+}
+
 /**
  * Calculates scores based on isUD threshold logic
  */
@@ -65,9 +154,11 @@ export function calculateProjectScore(
       const missingMandatory = section.solutions.filter(
         (sol) => sol.isMandatory && responseMap.get(sol.id) !== 'IMPLEMENTED'
       );
-      if (missingMandatory.length > 0) {
-        missingMandatorySectionsSet.add(section.number);
-      }
+      missingMandatory.forEach((solution) => {
+        missingMandatorySectionsSet.add(
+          getRequiredDisplayNumber(solution.standardNumber, getDisplaySectionNumber(chapter.number, section.number))
+        );
+      });
 
       let sectionCredits = 0;
       let thresholdReached = 0; // Number of solutions needed for the earned credits
@@ -102,8 +193,9 @@ export function calculateProjectScore(
         }
       }
 
-      if (sectionCredits < 1) {
-        failedSections.push(section.number);
+      const displaySectionNumber = getDisplaySectionNumber(chapter.number, section.number);
+      if (sectionCredits < 1 && preliminaryApplicableSections.has(displaySectionNumber)) {
+        failedSections.push(displaySectionNumber);
       }
 
       chapterEarned += sectionCredits;
@@ -126,8 +218,8 @@ export function calculateProjectScore(
     chapterScores,
     totalScore,
     totalBonus: finalBonus,
-    failedSections: [...new Set(failedSections)].sort(),
-    missingMandatorySections: [...missingMandatorySectionsSet].sort(),
+    failedSections: [...new Set(failedSections)].sort(compareStandardNumbers),
+    missingMandatorySections: [...missingMandatorySectionsSet].sort(compareStandardNumbers),
     activeSectionsCount,
   };
 }

@@ -78,7 +78,7 @@ export async function POST(
         sections: {
           include: {
             solutions: {
-              select: { id: true, points: true },
+              select: { id: true, points: true, isMandatory: true, standardNumber: true },
             },
           },
         },

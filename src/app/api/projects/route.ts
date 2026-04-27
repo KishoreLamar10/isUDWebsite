@@ -33,6 +33,7 @@ export async function POST(req: Request) {
       services,
       facilityUses,
     } = body;
+    const facilityNames = Array.isArray(facilityUses) ? facilityUses : [];
 
     // Validate mandatory fields
     if (!projectName || !contactName || !contactEmail || !telephone) {
@@ -59,9 +60,9 @@ export async function POST(req: Request) {
         buildingArea,
         siteArea,
         certification: certification || 'Guided Certification',
-        services,
+        services: Array.isArray(services) ? services : [],
         facilityUses: {
-          connect: facilityUses.map((name: string) => ({ name })),
+          connect: facilityNames.map((name: string) => ({ name })),
         },
         userId,
         status: 'ONGOING',
@@ -77,7 +78,7 @@ export async function POST(req: Request) {
       where: {
         facilityUses: {
           some: {
-            name: { in: facilityUses },
+            name: { in: facilityNames },
           },
         },
       },
@@ -125,11 +126,24 @@ export async function GET(req: Request) {
     }
 
     const userId = (session.user as any).id;
+    const systemRole = (session.user as any).role;
 
     const projects = await prisma.project.findMany({
-      where: {
-        userId,
-      },
+      where: systemRole === 'ADMIN'
+        ? {}
+        : {
+            OR: [
+              { userId },
+              {
+                teamMembers: {
+                  some: {
+                    userId,
+                    status: 'ACTIVE',
+                  },
+                },
+              },
+            ],
+          },
       orderBy: {
         createdAt: 'desc',
       },

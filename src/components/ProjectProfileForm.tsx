@@ -61,28 +61,74 @@ const facilityCategories: FacilityCategory[] = [
   },
 ];
 
-export default function ProjectProfileForm() {
+const serviceOptions = [
+  'Design Review',
+  'Facilities Assessment',
+  'Design Guidebook Development and Integration',
+  'Research',
+  'Training',
+  'Code Compliance Assessment',
+];
+
+export type ProjectProfileFormData = {
+  contactName: string;
+  contactEmail: string;
+  telephone: string;
+  firmName: string;
+  ownerName: string;
+  projectName: string;
+  address1: string;
+  address2: string;
+  city: string;
+  state: string;
+  zip: string;
+  country: string;
+  buildingArea: string;
+  siteArea: string;
+  certification: string;
+  services: string[];
+  facilityUses: string[];
+};
+
+const emptyFormData: ProjectProfileFormData = {
+  contactName: '',
+  contactEmail: '',
+  telephone: '',
+  firmName: '',
+  ownerName: '',
+  projectName: '',
+  address1: '',
+  address2: '',
+  city: '',
+  state: '',
+  zip: '',
+  country: 'United States',
+  buildingArea: '',
+  siteArea: '',
+  certification: 'Guided Certification',
+  services: [],
+  facilityUses: [],
+};
+
+type ProjectProfileFormProps = {
+  mode?: 'create' | 'edit';
+  projectId?: string;
+  initialData?: Partial<ProjectProfileFormData>;
+};
+
+export default function ProjectProfileForm({
+  mode = 'create',
+  projectId,
+  initialData,
+}: ProjectProfileFormProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [formData, setFormData] = useState({
-    contactName: '',
-    contactEmail: '',
-    telephone: '',
-    firmName: '',
-    ownerName: '',
-    projectName: '',
-    address1: '',
-    address2: '',
-    city: '',
-    state: '',
-    zip: '',
-    country: 'United States',
-    buildingArea: '',
-    siteArea: '',
-    certification: 'Guided Certification',
-    services: [] as string[],
-    facilityUses: [] as string[],
+  const [formData, setFormData] = useState<ProjectProfileFormData>({
+    ...emptyFormData,
+    ...initialData,
+    services: initialData?.services || [],
+    facilityUses: initialData?.facilityUses || [],
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -92,6 +138,11 @@ export default function ProjectProfileForm() {
 
   const handleCheckboxChange = (name: 'services' | 'facilityUses', item: string) => {
     setFormData((prev) => {
+      if (name === 'services' && item === 'Select All') {
+        const hasAll = serviceOptions.every((service) => prev.services.includes(service));
+        return { ...prev, services: hasAll ? [] : [...serviceOptions] };
+      }
+
       const current = prev[name];
       const next = current.includes(item)
         ? current.filter((i) => i !== item)
@@ -106,8 +157,8 @@ export default function ProjectProfileForm() {
     setError(null);
 
     try {
-      const response = await fetch('/api/projects', {
-        method: 'POST',
+      const response = await fetch(mode === 'edit' && projectId ? `/api/projects/${projectId}` : '/api/projects', {
+        method: mode === 'edit' ? 'PATCH' : 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
@@ -123,7 +174,7 @@ export default function ProjectProfileForm() {
       router.push(`/projects/${data.id}`);
       router.refresh();
     } catch (err: any) {
-      console.error('Project creation error:', err);
+      console.error('Project save error:', err);
       setError(err.message);
     } finally {
       setIsLoading(false);
@@ -135,7 +186,7 @@ export default function ProjectProfileForm() {
       
       {/* Page Title */}
       <div className="bg-slate-50 border-y border-slate-200 py-3 px-6 -mx-4 sm:-mx-6 lg:-mx-8 flex justify-between items-center">
-        <h2 className="text-lg font-bold text-slate-800">Project Profile</h2>
+        <h2 className="text-lg font-bold text-slate-800">{mode === 'edit' ? 'Edit Project Profile' : 'Project Profile'}</h2>
         {error && (
           <div className="bg-red-50 text-red-600 px-4 py-1 rounded text-sm font-medium border border-red-100 italic tracking-tight uppercase">
             {error}
@@ -236,7 +287,7 @@ export default function ProjectProfileForm() {
                     <HelpCircle size={14} className="text-red-400 rotate-180" />
                   </div>
                   <div className="flex">
-                    <input type="text" placeholder="sq. ft" className="w-full border border-slate-300 rounded px-4 py-2 text-sm focus:ring-2 focus:ring-secondary outline-none" />
+                    <input type="text" name="buildingArea" value={formData.buildingArea} onChange={handleInputChange} placeholder="sq. ft" className="w-full border border-slate-300 rounded px-4 py-2 text-sm focus:ring-2 focus:ring-secondary outline-none" />
                   </div>
                </div>
                <div className="space-y-1">
@@ -245,7 +296,7 @@ export default function ProjectProfileForm() {
                     <HelpCircle size={14} className="text-red-400 rotate-180" />
                   </div>
                   <div className="flex">
-                    <input type="text" placeholder="acres" className="w-full border border-slate-300 rounded px-4 py-2 text-sm focus:ring-2 focus:ring-secondary outline-none" />
+                    <input type="text" name="siteArea" value={formData.siteArea} onChange={handleInputChange} placeholder="acres" className="w-full border border-slate-300 rounded px-4 py-2 text-sm focus:ring-2 focus:ring-secondary outline-none" />
                   </div>
                </div>
             </div>
@@ -280,10 +331,18 @@ export default function ProjectProfileForm() {
             <div className="space-y-3">
               <label className="text-sm font-bold text-slate-800 block">Other Services Available</label>
               <div className="space-y-2">
-                {['Select All', 'Design Review', 'Facilities Assessment', 'Design Guidebook Development and Integration', 'Research', 'Training', 'Code Compliance Assessment'].map((service) => (
+                {['Select All', ...serviceOptions].map((service) => (
                   <label key={service} className="flex items-center gap-2 cursor-pointer group">
-                    <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${formData.services.includes(service) ? 'bg-secondary border-secondary' : 'bg-slate-100 border-slate-300 group-hover:border-slate-400'}`}>
-                      {formData.services.includes(service) && <Check size={12} className="text-white" />}
+                    <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${
+                      (service === 'Select All'
+                        ? serviceOptions.every((option) => formData.services.includes(option))
+                        : formData.services.includes(service))
+                        ? 'bg-secondary border-secondary'
+                        : 'bg-slate-100 border-slate-300 group-hover:border-slate-400'
+                    }`}>
+                      {(service === 'Select All'
+                        ? serviceOptions.every((option) => formData.services.includes(option))
+                        : formData.services.includes(service)) && <Check size={12} className="text-white" />}
                     </div>
                     <input type="checkbox" className="hidden" onChange={() => handleCheckboxChange('services', service)} />
                     <span className="text-sm text-slate-700">{service}</span>
@@ -331,7 +390,7 @@ export default function ProjectProfileForm() {
           type="button" 
           variant="secondary" 
           className="bg-[#002a54] hover:bg-[#001d3d] text-white px-8" 
-          onClick={() => router.push('/')}
+          onClick={() => router.push(mode === 'edit' && projectId ? `/projects/${projectId}` : '/')}
         >
           Cancel
         </Button>
@@ -341,7 +400,7 @@ export default function ProjectProfileForm() {
           className="bg-[#002a54] hover:bg-[#001d3d] px-10 disabled:opacity-50"
           disabled={isLoading}
         >
-          {isLoading ? 'Saving...' : 'Save'}
+          {isLoading ? 'Saving...' : mode === 'edit' ? 'Save Changes' : 'Save'}
         </Button>
       </div>
 

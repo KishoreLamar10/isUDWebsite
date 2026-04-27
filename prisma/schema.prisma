@@ -65,6 +65,7 @@ model VerificationToken {
 
 model Project {
   id            String            @id @default(uuid())
+  projectNumber Int               @unique @default(autoincrement())
   projectName   String
   contactName   String
   contactEmail  String

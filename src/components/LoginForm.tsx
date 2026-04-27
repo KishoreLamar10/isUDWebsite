@@ -12,8 +12,15 @@ export default function LoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [recoveryLoading, setRecoveryLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [isRecovering, setIsRecovering] = useState(false);
+  const [recoveryStep, setRecoveryStep] = useState<'email' | 'reset'>('email');
+  const [recoveryQuestion, setRecoveryQuestion] = useState('');
+  const [securityAnswer, setSecurityAnswer] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
 
   useEffect(() => {
     if (searchParams.get('registered')) {
@@ -52,6 +59,71 @@ export default function LoginForm() {
     }
   };
 
+  const handleRecoveryLookup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setRecoveryLoading(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const response = await fetch('/api/user/password-recovery', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      const data = await response.json();
+
+      if (!response.ok) throw new Error(data.error || 'Unable to find account');
+
+      setRecoveryQuestion(data.securityQuestion);
+      setRecoveryStep('reset');
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setRecoveryLoading(false);
+    }
+  };
+
+  const handlePasswordReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setRecoveryLoading(true);
+    setError(null);
+    setSuccess(null);
+
+    if (newPassword !== confirmNewPassword) {
+      setError('Passwords do not match');
+      setRecoveryLoading(false);
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/user/password-recovery', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email,
+          securityAnswer,
+          password: newPassword,
+        }),
+      });
+      const data = await response.json();
+
+      if (!response.ok) throw new Error(data.error || 'Unable to reset password');
+
+      setIsRecovering(false);
+      setRecoveryStep('email');
+      setSecurityAnswer('');
+      setNewPassword('');
+      setConfirmNewPassword('');
+      setPassword('');
+      setSuccess('Password reset successfully. Please login with your new password.');
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setRecoveryLoading(false);
+    }
+  };
+
   return (
     <div className="w-full space-y-8">
       <h2 className="text-2xl font-bold text-primary tracking-tight">Login to Existing Account</h2>
@@ -68,6 +140,107 @@ export default function LoginForm() {
         </div>
       )}
 
+      {isRecovering ? (
+        <form onSubmit={recoveryStep === 'email' ? handleRecoveryLookup : handlePasswordReset} className="space-y-6">
+          <div className="space-y-2">
+            <label className="text-sm font-semibold text-muted uppercase tracking-wider block">E-mail Address</label>
+            <div className="relative">
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full border border-slate-300 rounded-sm px-4 py-3 text-sm focus:ring-2 focus:ring-secondary focus:border-secondary transition-all outline-none pr-10"
+                placeholder="e-mail address"
+                required
+                disabled={recoveryLoading || recoveryStep === 'reset'}
+                suppressHydrationWarning={true}
+              />
+              <Mail className="absolute right-3 top-3.5 text-slate-400" size={18} />
+            </div>
+          </div>
+
+          {recoveryStep === 'reset' && (
+            <>
+              <div className="rounded-sm border border-slate-200 bg-slate-50 p-4">
+                <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400">Security Question</p>
+                <p className="mt-1 text-sm font-semibold text-slate-700">{recoveryQuestion}</p>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-muted uppercase tracking-wider block">Security Answer</label>
+                <input
+                  type="text"
+                  value={securityAnswer}
+                  onChange={(e) => setSecurityAnswer(e.target.value)}
+                  className="w-full border border-slate-300 rounded-sm px-4 py-3 text-sm focus:ring-2 focus:ring-secondary focus:border-secondary outline-none transition-all"
+                  placeholder="security answer"
+                  required
+                  disabled={recoveryLoading}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-muted uppercase tracking-wider block">New Password</label>
+                <input
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className="w-full border border-slate-300 rounded-sm px-4 py-3 text-sm focus:ring-2 focus:ring-secondary focus:border-secondary outline-none transition-all"
+                  placeholder="new password"
+                  required
+                  disabled={recoveryLoading}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-muted uppercase tracking-wider block">Confirm New Password</label>
+                <input
+                  type="password"
+                  value={confirmNewPassword}
+                  onChange={(e) => setConfirmNewPassword(e.target.value)}
+                  className="w-full border border-slate-300 rounded-sm px-4 py-3 text-sm focus:ring-2 focus:ring-secondary focus:border-secondary outline-none transition-all"
+                  placeholder="confirm new password"
+                  required
+                  disabled={recoveryLoading}
+                />
+              </div>
+            </>
+          )}
+
+          <div className="flex items-center justify-between gap-4">
+            <button
+              type="button"
+              className="text-primary font-bold text-sm tracking-tight hover:underline disabled:opacity-50"
+              disabled={recoveryLoading}
+              onClick={() => {
+                setIsRecovering(false);
+                setRecoveryStep('email');
+                setError(null);
+              }}
+            >
+              Back to login
+            </button>
+            <Button
+              type="submit"
+              variant="primary"
+              size="lg"
+              className="px-8 bg-[#002a54] hover:bg-[#001d3d] disabled:opacity-50"
+              disabled={recoveryLoading}
+            >
+              {recoveryLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Working...
+                </>
+              ) : recoveryStep === 'email' ? (
+                'Continue'
+              ) : (
+                'Reset Password'
+              )}
+            </Button>
+          </div>
+        </form>
+      ) : (
       <form onSubmit={handleLogin} className="space-y-6">
         {/* Email Field */}
         <div className="space-y-2">
@@ -106,7 +279,16 @@ export default function LoginForm() {
         </div>
 
         {/* Forgot Password Link */}
-        <button type="button" className="text-primary font-bold text-sm tracking-tight hover:underline block disabled:opacity-50" disabled={loading}>
+        <button
+          type="button"
+          className="text-primary font-bold text-sm tracking-tight hover:underline block disabled:opacity-50"
+          disabled={loading}
+          onClick={() => {
+            setIsRecovering(true);
+            setError(null);
+            setSuccess(null);
+          }}
+        >
           Forgot password?
         </button>
 
@@ -130,6 +312,7 @@ export default function LoginForm() {
           </Button>
         </div>
       </form>
+      )}
 
       {/* Mini Footer/Notice */}
       <p className="text-[10px] text-muted text-center pt-8 leading-relaxed italic">

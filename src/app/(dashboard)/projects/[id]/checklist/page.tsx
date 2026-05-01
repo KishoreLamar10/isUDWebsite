@@ -93,6 +93,12 @@ export default function ChecklistPage({ params }: { params: Promise<Params> }) {
     dirtyResponsesRef.current = {};
     dirtyTogglesRef.current = {};
 
+    if (Object.keys(responseChanges).length === 0 && Object.keys(toggleChanges).length === 0) {
+      saveInFlightRef.current = false;
+      setSaving(false);
+      return;
+    }
+
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 15000);
 
@@ -156,6 +162,7 @@ export default function ChecklistPage({ params }: { params: Promise<Params> }) {
     setSaving(true);
     setSaveError(false);
     saveTimerRef.current = setTimeout(() => {
+      saveTimerRef.current = null;
       saveLatestChecklist();
     }, 500);
   }, [saveLatestChecklist]);

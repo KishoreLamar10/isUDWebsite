@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { Search, Plus, Info } from 'lucide-react';
-import { useMemo, useState, useEffect } from 'react';
+import { useCallback, useMemo, useState, useEffect } from 'react';
 import Button from './ui/Button';
 
 const tableHeaders = ['ID', 'Name', 'Owner', 'Status', 'Score'];
@@ -14,23 +14,28 @@ export default function ProjectTable() {
   const [filterBy, setFilterBy] = useState('ALL');
   const [query, setQuery] = useState('');
 
-  useEffect(() => {
-    const fetchProjects = async () => {
-      try {
-        const response = await fetch('/api/projects');
-        if (response.ok) {
-          const data = await response.json();
-          setProjects(data);
-        }
-      } catch (error) {
-        console.error('Error fetching projects:', error);
-      } finally {
-        setIsLoading(false);
+  const fetchProjects = useCallback(async () => {
+    try {
+      const response = await fetch('/api/projects');
+      if (response.ok) {
+        const data = await response.json();
+        setProjects(data);
       }
-    };
-
-    fetchProjects();
+    } catch (error) {
+      console.error('Error fetching projects:', error);
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchProjects();
+  }, [fetchProjects]);
+
+  useEffect(() => {
+    window.addEventListener('team-invitation-accepted', fetchProjects);
+    return () => window.removeEventListener('team-invitation-accepted', fetchProjects);
+  }, [fetchProjects]);
 
   const isEmpty = projects.length === 0;
   const visibleProjects = useMemo(() => {

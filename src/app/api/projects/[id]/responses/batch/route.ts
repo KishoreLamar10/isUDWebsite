@@ -1,8 +1,21 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { ResponseStatus } from '@prisma/client';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { calculateProjectScore } from '@/lib/scoring';
+
+const validResponseStatuses = new Set(Object.values(ResponseStatus));
+
+type ResponseChange = {
+  solutionId: string;
+  status: ResponseStatus;
+};
+
+type ToggleChange = {
+  sectionId: string;
+  isEnabled: boolean;
+};
 
 export async function POST(
   req: Request,
@@ -18,8 +31,8 @@ export async function POST(
     const userId = (session.user as any).id;
     const systemRole = (session.user as any).role;
     const { responses, toggles } = await req.json();
-    const responseItems = Array.isArray(responses) ? responses : [];
-    const toggleItems = Array.isArray(toggles) ? toggles : [];
+    const rawResponseItems = Array.isArray(responses) ? responses : [];
+    const rawToggleItems = Array.isArray(toggles) ? toggles : [];
 
     // Check if user is the owner OR a team member with ACTIVE status and EDITOR/ADMIN permission
     const project = await prisma.project.findUnique({
@@ -56,12 +69,64 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized: Read-only access or missing permissions' }, { status: 403 });
     }
 
+    const responseMap = new Map<string, ResponseStatus>();
+    for (const item of rawResponseItems) {
+      if (
+        !item ||
+        typeof item.solutionId !== 'string' ||
+        typeof item.status !== 'string' ||
+        !validResponseStatuses.has(item.status as ResponseStatus)
+      ) {
+        return NextResponse.json({ error: 'Invalid response payload' }, { status: 400 });
+      }
+
+      responseMap.set(item.solutionId, item.status as ResponseStatus);
+    }
+
+    const toggleMap = new Map<string, boolean>();
+    for (const item of rawToggleItems) {
+      if (!item || typeof item.sectionId !== 'string' || typeof item.isEnabled !== 'boolean') {
+        return NextResponse.json({ error: 'Invalid toggle payload' }, { status: 400 });
+      }
+
+      toggleMap.set(item.sectionId, item.isEnabled);
+    }
+
+    const responseItems: ResponseChange[] = [...responseMap.entries()].map(([solutionId, status]) => ({
+      solutionId,
+      status,
+    }));
+    const toggleItems: ToggleChange[] = [...toggleMap.entries()].map(([sectionId, isEnabled]) => ({
+      sectionId,
+      isEnabled,
+    }));
+
     const responseSolutionIds = responseItems
-      .map((item: any) => item.solutionId)
-      .filter((solutionId: unknown): solutionId is string => typeof solutionId === 'string');
+      .map((item) => item.solutionId);
     const toggleSectionIds = toggleItems
-      .map((item: any) => item.sectionId)
-      .filter((sectionId: unknown): sectionId is string => typeof sectionId === 'string');
+      .map((item) => item.sectionId);
+
+    if (responseSolutionIds.length > 0) {
+      const existingSolutions = await prisma.solution.findMany({
+        where: { id: { in: responseSolutionIds } },
+        select: { id: true },
+      });
+
+      if (existingSolutions.length !== responseSolutionIds.length) {
+        return NextResponse.json({ error: 'One or more solution IDs are invalid' }, { status: 400 });
+      }
+    }
+
+    if (toggleSectionIds.length > 0) {
+      const existingSections = await prisma.section.findMany({
+        where: { id: { in: toggleSectionIds } },
+        select: { id: true },
+      });
+
+      if (existingSections.length !== toggleSectionIds.length) {
+        return NextResponse.json({ error: 'One or more section IDs are invalid' }, { status: 400 });
+      }
+    }
 
     await prisma.$transaction([
       prisma.projectResponse.deleteMany({
@@ -73,7 +138,7 @@ export async function POST(
       ...(responseItems.length > 0
         ? [
             prisma.projectResponse.createMany({
-              data: responseItems.map((item: any) => ({
+              data: responseItems.map((item) => ({
                 projectId: id,
                 solutionId: item.solutionId,
                 status: item.status,
@@ -91,10 +156,10 @@ export async function POST(
       ...(toggleItems.length > 0
         ? [
             prisma.sectionToggle.createMany({
-              data: toggleItems.map((item: any) => ({
+              data: toggleItems.map((item) => ({
                 projectId: id,
                 sectionId: item.sectionId,
-                isEnabled: Boolean(item.isEnabled),
+                isEnabled: item.isEnabled,
               })),
               skipDuplicates: true,
             }),

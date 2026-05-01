@@ -147,13 +147,6 @@ export default function ProjectOverview({ id: propId }: { id?: string }) {
         <span className="font-bold text-slate-800">Project Overview</span>
       </div>
 
-      {/* Disclaimer */}
-      <div className="bg-slate-50 border border-slate-200 rounded px-6 py-4 text-sm text-slate-600 leading-relaxed">
-        The scores displayed are preliminary, based only on your isUD Checklist selections, subject to your interpretation.{' '}
-        <Link href="/guide" className="text-secondary font-bold underline">Contact us</Link>{' '}
-        to work with a Universal Design expert who can guide you through a project, and ensure your project contains all the necessary elements to earn isUD Certification.
-      </div>
-
       {/* Project Title + Actions */}
       <div className="bg-white border border-slate-200 rounded-sm px-6 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-sm">
         <div className="flex items-center gap-4">

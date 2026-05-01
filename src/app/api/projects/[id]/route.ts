@@ -112,12 +112,8 @@ export async function GET(
       }
     });
   } catch (error: any) {
-    console.error('CRITICAL API ERROR:', error);
-    return NextResponse.json({ 
-      error: error.message || 'Internal server error',
-      stack: error.stack,
-      hint: 'Check scoring utility inputs and Prisma relations'
-    }, { status: 500 });
+    console.error('Error fetching project:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 

@@ -91,6 +91,18 @@ export default function ProjectTeamPage() {
     fetchData();
   }, [fetchData]);
 
+  useEffect(() => {
+    const handleInvitationAccepted = (event: Event) => {
+      const acceptedProjectId = (event as CustomEvent<{ projectId?: string }>).detail?.projectId;
+      if (!acceptedProjectId || acceptedProjectId === projectId) {
+        fetchData();
+      }
+    };
+
+    window.addEventListener('team-invitation-accepted', handleInvitationAccepted);
+    return () => window.removeEventListener('team-invitation-accepted', handleInvitationAccepted);
+  }, [fetchData, projectId]);
+
   const handleInvite = async (data: { email: string; permission: string; role: string }) => {
     const res = await fetch(`/api/projects/${projectId}/team`, {
       method: 'POST',

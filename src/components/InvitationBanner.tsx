@@ -45,6 +45,7 @@ export default function InvitationBanner() {
       if (res.ok) {
         // Success - remove from local state and refresh
         setInvitations(prev => prev.filter(inv => inv.projectId !== projectId));
+        window.dispatchEvent(new CustomEvent('team-invitation-accepted', { detail: { projectId } }));
         router.refresh();
       }
     } catch (error) {

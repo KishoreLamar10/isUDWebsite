@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { HelpCircle, Check } from 'lucide-react';
 import Button from './ui/Button';
@@ -10,7 +10,7 @@ interface FacilityCategory {
   items: string[];
 }
 
-const facilityCategories: FacilityCategory[] = [
+const facilityCategoryTemplates: FacilityCategory[] = [
   {
     title: 'Community/Recreation',
     items: ['Community Center', 'Gym', 'Pool', 'Sports Complex'],
@@ -70,6 +70,29 @@ const serviceOptions = [
   'Code Compliance Assessment',
 ];
 
+const usStates = [
+  'Alabama', 'Alaska', 'Arizona', 'Arkansas', 'California', 'Colorado', 'Connecticut', 'Delaware',
+  'District of Columbia', 'Florida', 'Georgia', 'Hawaii', 'Idaho', 'Illinois', 'Indiana', 'Iowa',
+  'Kansas', 'Kentucky', 'Louisiana', 'Maine', 'Maryland', 'Massachusetts', 'Michigan', 'Minnesota',
+  'Mississippi', 'Missouri', 'Montana', 'Nebraska', 'Nevada', 'New Hampshire', 'New Jersey',
+  'New Mexico', 'New York', 'North Carolina', 'North Dakota', 'Ohio', 'Oklahoma', 'Oregon',
+  'Pennsylvania', 'Rhode Island', 'South Carolina', 'South Dakota', 'Tennessee', 'Texas', 'Utah',
+  'Vermont', 'Virginia', 'Washington', 'West Virginia', 'Wisconsin', 'Wyoming',
+];
+
+const canadianProvinces = [
+  'Alberta', 'British Columbia', 'Manitoba', 'New Brunswick', 'Newfoundland and Labrador',
+  'Northwest Territories', 'Nova Scotia', 'Nunavut', 'Ontario', 'Prince Edward Island',
+  'Quebec', 'Saskatchewan', 'Yukon',
+];
+
+const getRegionOptions = (country: string) => (
+  country === 'Canada' ? canadianProvinces : usStates
+);
+
+const fallbackFacilityNames = facilityCategoryTemplates.flatMap((category) => category.items);
+const categorizedFacilityNames = new Set(fallbackFacilityNames);
+
 export type ProjectProfileFormData = {
   contactName: string;
   contactEmail: string;
@@ -124,6 +147,7 @@ export default function ProjectProfileForm({
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [facilityNames, setFacilityNames] = useState<string[]>(fallbackFacilityNames);
   const [formData, setFormData] = useState<ProjectProfileFormData>({
     ...emptyFormData,
     ...initialData,
@@ -131,9 +155,59 @@ export default function ProjectProfileForm({
     facilityUses: initialData?.facilityUses || [],
   });
 
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadFacilityUses = async () => {
+      try {
+        const response = await fetch('/api/facility-uses');
+        if (!response.ok) return;
+
+        const data = await response.json();
+        const names = Array.isArray(data)
+          ? data.map((facility) => facility.name).filter((name): name is string => typeof name === 'string')
+          : [];
+
+        if (isMounted && names.length > 0) {
+          setFacilityNames(names);
+        }
+      } catch {
+        // Keep seeded fallback names available if the option endpoint is unreachable.
+      }
+    };
+
+    loadFacilityUses();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const facilityCategories = useMemo(() => {
+    const availableNames = new Set(facilityNames);
+    const grouped = facilityCategoryTemplates
+      .map((category) => ({
+        ...category,
+        items: category.items.filter((item) => availableNames.has(item)),
+      }))
+      .filter((category) => category.items.length > 0);
+    const otherItems = facilityNames.filter((name) => !categorizedFacilityNames.has(name));
+
+    return otherItems.length > 0 ? [...grouped, { title: 'Other', items: otherItems }] : grouped;
+  }, [facilityNames]);
+
+  const regionOptions = getRegionOptions(formData.country);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData((prev) => {
+      if (name === 'country') {
+        const nextRegions = getRegionOptions(value);
+        return { ...prev, country: value, state: nextRegions.includes(prev.state) ? prev.state : '' };
+      }
+
+      return { ...prev, [name]: value };
+    });
   };
 
   const handleCheckboxChange = (name: 'services' | 'facilityUses', item: string) => {
@@ -261,9 +335,10 @@ export default function ProjectProfileForm({
               <div className="space-y-1">
                 <label className="text-sm font-medium text-slate-600">State/Province</label>
                 <select name="state" value={formData.state} onChange={handleInputChange} className="w-full border border-slate-300 rounded px-4 py-2 text-sm focus:ring-2 focus:ring-secondary outline-none bg-white">
-                  <option>- State -</option>
-                  <option>New York</option>
-                  <option>California</option>
+                  <option value="">{formData.country === 'Canada' ? '- Province/Territory -' : '- State -'}</option>
+                  {regionOptions.map((region) => (
+                    <option key={region} value={region}>{region}</option>
+                  ))}
                 </select>
               </div>
             </div>

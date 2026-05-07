@@ -1,36 +1,14 @@
 'use client';
 
-import Script from 'next/script';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Mail, Phone, ShieldCheck, Loader2 } from 'lucide-react';
+import { Mail, Phone, Loader2 } from 'lucide-react';
 import Button from './ui/Button';
-
-declare global {
-  interface Window {
-    turnstile?: {
-      render: (
-        element: HTMLElement,
-        options: {
-          sitekey: string;
-          callback: (token: string) => void;
-          'expired-callback': () => void;
-          'error-callback': () => void;
-        }
-      ) => string;
-      reset: (widgetId?: string) => void;
-    };
-  }
-}
 
 export default function RegisterForm() {
   const router = useRouter();
-  const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
-  const turnstileRef = useRef<HTMLDivElement | null>(null);
-  const turnstileWidgetRef = useRef<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [turnstileToken, setTurnstileToken] = useState('');
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -57,19 +35,13 @@ export default function RegisterForm() {
       return;
     }
 
-    if (turnstileSiteKey && !turnstileToken) {
-      setError('Please complete the human verification.');
-      setLoading(false);
-      return;
-    }
-
     try {
       const response = await fetch("/api/register", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ ...formData, turnstileToken }),
+        body: JSON.stringify(formData),
       });
 
       if (!response.ok) {
@@ -81,8 +53,6 @@ export default function RegisterForm() {
       router.push('/login?registered=true');
     } catch (err: any) {
       setError(err.message);
-      window.turnstile?.reset(turnstileWidgetRef.current || undefined);
-      setTurnstileToken('');
     } finally {
       setLoading(false);
     }
@@ -93,34 +63,8 @@ export default function RegisterForm() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const renderTurnstile = useCallback(() => {
-    if (!turnstileSiteKey || !turnstileRef.current || !window.turnstile || turnstileWidgetRef.current) {
-      return;
-    }
-
-    turnstileWidgetRef.current = window.turnstile.render(turnstileRef.current, {
-      sitekey: turnstileSiteKey,
-      callback: setTurnstileToken,
-      'expired-callback': () => setTurnstileToken(''),
-      'error-callback': () => setTurnstileToken(''),
-    });
-  }, [turnstileSiteKey]);
-
-  useEffect(() => {
-    renderTurnstile();
-  }, [renderTurnstile]);
-
   return (
     <div className="w-full space-y-8">
-      {turnstileSiteKey && (
-        <Script
-          src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
-          async
-          defer
-          onLoad={renderTurnstile}
-        />
-      )}
-
       <div className="space-y-1">
         <h2 className="text-2xl font-bold text-primary tracking-tight">Create a New Free Account</h2>
         <p className="text-sm font-medium text-muted">
@@ -339,20 +283,6 @@ export default function RegisterForm() {
           </div>
         </div>
 
-        {/* Human verification */}
-        <div className="flex justify-center sm:justify-start">
-          {turnstileSiteKey ? (
-            <div ref={turnstileRef} />
-          ) : (
-            <div className="flex w-full max-w-md items-start gap-3 rounded-sm border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-              <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0" />
-              <p>
-                Human verification is not configured for this environment.
-              </p>
-            </div>
-          )}
-        </div>
-
         {/* Submit Button */}
         <div className="flex justify-end pt-8">
           <Button 
@@ -360,7 +290,7 @@ export default function RegisterForm() {
             variant="primary" 
             size="lg" 
             className="w-full sm:w-auto px-16 bg-[#002a54] hover:bg-[#001d3d] disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={loading || Boolean(turnstileSiteKey && !turnstileToken)}
+            disabled={loading}
           >
             {loading ? (
               <>

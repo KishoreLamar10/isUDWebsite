@@ -56,5 +56,3 @@ For Vercel production, set the variables from `.env.production.example` in the V
 - `DATABASE_URL`: Neon Postgres connection string, usually the pooled `*-pooler.neon.tech` URL with `sslmode=require`.
 - `NEXTAUTH_URL`: `https://isud-website.vercel.app` unless you add a custom production domain.
 - `NEXTAUTH_SECRET`: a stable random secret. Generate one with `openssl rand -base64 32`.
-- `NEXT_PUBLIC_TURNSTILE_SITE_KEY`: Cloudflare Turnstile site key for registration human verification.
-- `TURNSTILE_SECRET_KEY`: Cloudflare Turnstile secret key used by `/api/register` to verify registrations.

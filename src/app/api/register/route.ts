@@ -2,28 +2,6 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 
-async function verifyTurnstileToken(token: string | undefined) {
-  const secret = process.env.TURNSTILE_SECRET_KEY;
-
-  if (!secret) {
-    return true;
-  }
-
-  if (!token) return false;
-
-  const formData = new FormData();
-  formData.append("secret", secret);
-  formData.append("response", token);
-
-  const response = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
-    method: "POST",
-    body: formData,
-  });
-  const result = await response.json().catch(() => null);
-
-  return Boolean(result?.success);
-}
-
 export async function POST(req: Request) {
   try {
     const body = await req.json();
@@ -39,17 +17,11 @@ export async function POST(req: Request) {
       password,
       securityQuestion,
       securityAnswer,
-      turnstileToken,
     } = body;
 
     // Basic validation
     if (!emailAddress || !password || !firstName || !lastName || !telephone) {
       return new NextResponse("Required fields are missing", { status: 400 });
-    }
-
-    const isHuman = await verifyTurnstileToken(turnstileToken);
-    if (!isHuman) {
-      return new NextResponse("Human verification failed", { status: 400 });
     }
 
     // Check if email already exists

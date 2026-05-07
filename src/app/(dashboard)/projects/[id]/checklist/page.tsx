@@ -6,6 +6,8 @@ import { ChecklistSidebar } from '@/components/ChecklistSidebar';
 import { ChecklistSectionList } from '@/components/ChecklistSectionList';
 import { ResponseStatus } from '@prisma/client';
 import { Printer, ChevronRight, CheckCircle2, AlertCircle } from 'lucide-react';
+import { calculateProjectScore } from '@/lib/scoring';
+import { PreliminaryChecklistInfo } from '@/components/PreliminaryChecklistInfo';
 
 interface Params {
   id: string;
@@ -25,6 +27,7 @@ export default function ChecklistPage({ params }: { params: Promise<Params> }) {
   
   // Local state for edits
   const [responses, setResponses] = useState<Record<string, ResponseStatus>>({});
+  const [toggles, setToggles] = useState<Record<string, boolean>>({});
   const responsesRef = useRef<Record<string, ResponseStatus>>({});
   const togglesRef = useRef<Record<string, boolean>>({});
   const dirtyResponsesRef = useRef<Record<string, ResponseStatus>>({});
@@ -64,6 +67,7 @@ export default function ChecklistPage({ params }: { params: Promise<Params> }) {
 
       const toggleMap: Record<string, boolean> = {};
       data.toggles.forEach((t: any) => toggleMap[t.sectionId] = t.isEnabled);
+      setToggles(toggleMap);
       togglesRef.current = toggleMap;
 
     } catch {
@@ -193,20 +197,11 @@ export default function ChecklistPage({ params }: { params: Promise<Params> }) {
     scheduleAutoSave();
   };
 
-  const handleToggleChange = (section: any, enabled: boolean) => {
-    // 1. Update the toggle state (for exclusion logic if still used by backend)
-    const nextToggles = { ...togglesRef.current, [section.id]: enabled };
+  const handleSectionToggleChange = (sectionId: string, isEnabled: boolean) => {
+    const nextToggles = { ...togglesRef.current, [sectionId]: isEnabled };
     togglesRef.current = nextToggles;
-    dirtyTogglesRef.current = { ...dirtyTogglesRef.current, [section.id]: enabled };
-
-    // 2. Bulk update all solutions in this section
-    const newResponses = { ...responsesRef.current };
-    section.solutions.forEach((sol: any) => {
-      newResponses[sol.id] = enabled ? 'IMPLEMENTED' as ResponseStatus : 'NOT_IMPLEMENTED' as ResponseStatus;
-      dirtyResponsesRef.current[sol.id] = newResponses[sol.id];
-    });
-    responsesRef.current = newResponses;
-    setResponses(newResponses);
+    dirtyTogglesRef.current = { ...dirtyTogglesRef.current, [sectionId]: isEnabled };
+    setToggles(nextToggles);
     scheduleAutoSave();
   };
 
@@ -224,6 +219,26 @@ export default function ChecklistPage({ params }: { params: Promise<Params> }) {
   const activeChapter = chapters.find((c) => c.id === activeChapterId);
 
   const isReadOnly = userRole === 'VIEWER' || userStatus === 'PENDING';
+  const toggleItems = Object.entries(toggles).map(([sectionId, isEnabled]) => ({ sectionId, isEnabled }));
+  const responseItems = Object.entries(responses).map(([solutionId, status]) => ({ solutionId, status }));
+  const checklistScore = calculateProjectScore(chapters, responseItems, toggleItems);
+  const totalAvailable = checklistScore.chapterScores.reduce((sum, chapter) => sum + chapter.total, 0);
+  const scorePercentage = totalAvailable > 0
+    ? ((checklistScore.totalScore + checklistScore.totalBonus) / totalAvailable) * 100
+    : 0;
+  const scoreValue = Math.round(scorePercentage);
+  const preliminaryStatus = {
+    failedSections: checklistScore.failedSections,
+    missingMandatorySections: checklistScore.missingMandatorySections,
+    activeSectionsCount: checklistScore.activeSectionsCount,
+    scorePercentage,
+    isThresholdMet: scorePercentage >= 78,
+    isQualifying: checklistScore.activeSectionsCount >= 1,
+    isMandatoryMet: checklistScore.missingMandatorySections.length === 0,
+  };
+  const scoreRadius = 17;
+  const scoreCircumference = 2 * Math.PI * scoreRadius;
+  const scoreOffset = scoreCircumference * (1 - Math.min(scoreValue, 100) / 100);
 
   if (errorMessage) {
     return (
@@ -248,13 +263,13 @@ export default function ChecklistPage({ params }: { params: Promise<Params> }) {
   return (
     <div className="flex flex-col h-[calc(100vh-80px)]">
       {/* Top Header Bar */}
-      <div className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8 shrink-0">
-        <div className="flex items-center gap-3 text-sm text-slate-500 font-medium">
+      <div className="min-h-20 bg-white border-b border-slate-200 flex flex-wrap items-center justify-between gap-4 px-8 py-3 shrink-0">
+        <div className="flex min-w-0 items-center gap-3 text-sm text-slate-500 font-medium">
           <Link href="/" onClick={(event) => !confirmNavigation() && event.preventDefault()} className="hover:text-primary transition-colors">My Projects</Link>
           <ChevronRight className="w-4 h-4 opacity-40" />
           <Link href={`/projects/${id}`} onClick={(event) => !confirmNavigation() && event.preventDefault()} className="hover:text-primary transition-colors">Project Overview</Link>
           <ChevronRight className="w-4 h-4 opacity-40" />
-          <span className="text-slate-900">{isReadOnly ? 'View Checklist' : 'Edit Checklist'}</span>
+          <span className="font-bold text-slate-900">{isReadOnly ? 'View Checklist' : 'Edit Checklist'}</span>
           {isReadOnly && (
             <span className="ml-4 px-3 py-1 bg-slate-100 text-slate-500 text-[10px] font-bold uppercase tracking-widest rounded-full border border-slate-200">
               Read-Only Mode
@@ -263,16 +278,65 @@ export default function ChecklistPage({ params }: { params: Promise<Params> }) {
         </div>
 
         <div className="flex items-center gap-3">
+          <div className="hidden items-stretch overflow-hidden rounded-md border border-slate-200 bg-slate-50/80 shadow-sm xl:flex">
+            <div className="flex items-center gap-5 px-4 py-2">
+              <p className="text-[11px] font-bold uppercase tracking-widest text-slate-500">Credits</p>
+              <div className="flex items-center gap-4 text-center">
+                <div className="min-w-12">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Earned</p>
+                  <p className="text-xl font-extrabold leading-6 text-primary">{checklistScore.totalScore}</p>
+                </div>
+                <div className="h-9 w-px bg-slate-200" />
+                <div className="min-w-14">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Available</p>
+                  <p className="text-xl font-extrabold leading-6 text-primary">{totalAvailable}</p>
+                </div>
+                <div className="h-9 w-px bg-slate-200" />
+                <div className="min-w-12">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Bonus</p>
+                  <p className="text-xl font-extrabold leading-6 text-primary">{checklistScore.totalBonus}</p>
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 border-l border-slate-200 bg-white px-4 py-2">
+              <p className="text-[11px] font-bold uppercase tracking-widest text-slate-500">Score</p>
+              <div className="relative flex h-11 w-11 items-center justify-center">
+                <svg width="44" height="44" className="-rotate-90">
+                  <circle cx="22" cy="22" r={scoreRadius} stroke="#e2e8f0" strokeWidth="6" fill="none" />
+                  <circle
+                    cx="22"
+                    cy="22"
+                    r={scoreRadius}
+                    stroke="#F7941D"
+                    strokeWidth="6"
+                    fill="none"
+                    strokeDasharray={scoreCircumference}
+                    strokeDashoffset={scoreOffset}
+                    strokeLinecap="round"
+                    className="transition-all duration-500"
+                  />
+                </svg>
+                <span className="absolute text-base font-extrabold text-primary">{scoreValue}</span>
+              </div>
+            </div>
+          </div>
+
+          <PreliminaryChecklistInfo
+            status={preliminaryStatus}
+            totalEarned={checklistScore.totalScore}
+            bonus={checklistScore.totalBonus}
+          />
+
           <button 
             onClick={() => window.print()}
-            className="flex items-center gap-2 px-6 h-10 bg-slate-100 text-slate-600 rounded-md text-sm font-bold hover:bg-slate-200 transition-all active:scale-95"
+            className="flex h-12 items-center gap-2 rounded-md bg-slate-100 px-6 text-sm font-bold text-slate-600 transition-all hover:bg-slate-200 active:scale-95"
           >
             <Printer className="w-4 h-4" />
             Print
           </button>
 
           {!isReadOnly && (
-            <div className={`flex h-10 items-center gap-2 rounded-md px-4 text-sm font-bold ${
+            <div className={`flex h-12 items-center gap-2 rounded-md px-5 text-sm font-bold ${
               saveError
                 ? 'bg-red-50 text-red-700 border border-red-100'
                 : saving
@@ -307,10 +371,11 @@ export default function ChecklistPage({ params }: { params: Promise<Params> }) {
             <ChecklistSectionList 
               chapter={activeChapter}
               responses={responses}
+              toggles={toggles}
               allPhases={allPhases}
               allGoals={allGoals}
               onStatusChange={handleStatusChange}
-              onToggleChange={handleToggleChange}
+              onSectionToggleChange={handleSectionToggleChange}
               readOnly={isReadOnly}
             />
           )}

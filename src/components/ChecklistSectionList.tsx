@@ -3,25 +3,26 @@
 import React from 'react';
 import { ChecklistSolutionItem } from './ChecklistSolutionItem';
 import { ResponseStatus } from '@prisma/client';
-import { HelpCircle } from 'lucide-react';
 
 interface SectionListProps {
   chapter: any;
   responses: Record<string, ResponseStatus>;
+  toggles: Record<string, boolean>;
   allPhases: any[];
   allGoals: any[];
   onStatusChange: (solutionId: string, status: ResponseStatus) => void;
-  onToggleChange: (section: any, enabled: boolean) => void;
+  onSectionToggleChange: (sectionId: string, isEnabled: boolean) => void;
   readOnly?: boolean;
 }
 
 export const ChecklistSectionList: React.FC<SectionListProps> = ({
   chapter,
   responses,
+  toggles,
   allPhases,
   allGoals,
   onStatusChange,
-  onToggleChange,
+  onSectionToggleChange,
   readOnly = false,
 }) => {
 
@@ -38,7 +39,9 @@ export const ChecklistSectionList: React.FC<SectionListProps> = ({
       {/* Required Solutions Summary */}
       {(() => {
         const mandatorySolutions = chapter.sections.flatMap((s: any) => 
-          s.solutions.filter((sol: any) => sol.isMandatory).map((sol: any) => ({ ...sol, sectionNumber: s.number }))
+          toggles[s.id] === false
+            ? []
+            : s.solutions.filter((sol: any) => sol.isMandatory).map((sol: any) => ({ ...sol, sectionNumber: `${chapter.number}.${s.number}` }))
         );
         
         if (mandatorySolutions.length === 0) return null;
@@ -76,89 +79,90 @@ export const ChecklistSectionList: React.FC<SectionListProps> = ({
 
       <div className="space-y-12">
         {chapter.sections.map((section: any) => {
+          const displaySectionNumber = `${chapter.number}.${section.number}`;
+          const isSectionEnabled = toggles[section.id] !== false;
           const totalSolutions = section.solutions.length;
           const implementedCount = section.solutions.filter(
             (sol: any) => responses[sol.id] === 'IMPLEMENTED'
           ).length;
 
-          // A section toggle is "ON" if all solutions in it are IMPLEMENTED
-          const allImplemented = totalSolutions > 0 && implementedCount === totalSolutions;
-
           // Calculate earned credits based on thresholds or point-summing fallback
           let earned = 0;
           const hasThresholds = section.minPoints1 > 0 || section.minPoints2 > 0;
 
-          if (hasThresholds) {
-            if (section.minPoints3 > 0 && implementedCount >= section.minPoints3) earned = section.totalCredits;
-            else if (section.minPoints2 > 0 && implementedCount >= section.minPoints2) earned = section.totalCredits;
-            else if (section.minPoints1 > 0 && implementedCount >= section.minPoints1) earned = Math.max(1, Math.floor(section.totalCredits / 2));
-          } else {
-            // Point-summing fallback matching the scoring.ts implementation
-            const rawScore = section.solutions.reduce((sum: number, sol: any) => {
-              return sum + (responses[sol.id] === 'IMPLEMENTED' ? sol.points : 0);
-            }, 0);
-            earned = Math.min(rawScore, section.totalCredits);
+          if (isSectionEnabled) {
+            if (hasThresholds) {
+              if (section.minPoints3 > 0 && implementedCount >= section.minPoints3) earned = section.totalCredits;
+              else if (section.minPoints2 > 0 && implementedCount >= section.minPoints2) earned = section.totalCredits;
+              else if (section.minPoints1 > 0 && implementedCount >= section.minPoints1) earned = Math.max(1, Math.floor(section.totalCredits / 2));
+            } else {
+              // Point-summing fallback matching the scoring.ts implementation
+              const rawScore = section.solutions.reduce((sum: number, sol: any) => {
+                return sum + (responses[sol.id] === 'IMPLEMENTED' ? sol.points : 0);
+              }, 0);
+              earned = Math.min(rawScore, section.totalCredits);
+            }
           }
 
           return (
-            <div key={section.id} className="relative group/sec">
+            <div key={section.id} className={`relative group/sec transition-opacity ${isSectionEnabled ? '' : 'opacity-70'}`}>
               <div className="flex items-center justify-between mb-4 bg-white sticky top-0 z-10 py-2">
                 <div className="flex items-center gap-4">
-                  <span className="text-xl font-bold text-primary">{section.number}</span>
+                  <span className="text-xl font-bold text-primary">{displaySectionNumber}</span>
                   <h3 className="text-xl font-bold text-slate-800 tracking-tight group-hover/sec:text-primary transition-colors">
                     {section.title}
                   </h3>
                 </div>
 
-                <div className="flex items-center gap-8">
-                  <div className="flex items-center gap-6">
-                    <div className="flex flex-col items-center">
-                      <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1">Solutions</span>
-                      <div className="flex items-center h-7 px-3 rounded-full bg-slate-200/60 text-slate-700 text-sm font-bold min-w-[70px] justify-center">
-                        <span className={implementedCount > 0 ? 'text-primary' : ''}>{implementedCount}</span>
-                        <span className="mx-1 opacity-40 font-normal">of</span>
-                        <span>{totalSolutions}</span>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-col items-center">
-                      <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1">Credits</span>
-                      <div className="flex items-center h-7 px-3 rounded-full bg-slate-200/60 text-slate-700 text-sm font-bold min-w-[70px] justify-center">
-                        <span className={earned > 0 ? 'text-primary transition-all duration-300' : ''}>{earned}</span>
-                        <span className="mx-1 opacity-40 font-normal">of</span>
-                        <span>{section.totalCredits}</span>
-                      </div>
-                    </div>
-                  </div>
-
+                <div className="flex items-center gap-6">
                   <div className="flex flex-col items-center">
-                    <div className="flex items-center gap-1 mb-1">
-                      <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Bulk Selection</span>
-                      <HelpCircle className="w-3 h-3 text-primary/60" />
-                    </div>
+                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1">Section</span>
                     <button
-                      onClick={() => !readOnly && onToggleChange(section, !allImplemented)}
+                      type="button"
+                      onClick={() => !readOnly && onSectionToggleChange(section.id, !isSectionEnabled)}
                       disabled={readOnly}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 focus:outline-none ${
-                        allImplemented ? 'bg-primary' : 'bg-slate-300'
-                      } ${readOnly ? 'cursor-not-allowed opacity-50' : ''}`}
+                      aria-pressed={isSectionEnabled}
+                      aria-label={`${isSectionEnabled ? 'Exclude' : 'Include'} ${section.title}`}
+                      className={`relative inline-flex h-7 w-14 items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-secondary focus:ring-offset-2 ${
+                        isSectionEnabled ? 'bg-primary' : 'bg-slate-300'
+                      } ${readOnly ? 'cursor-not-allowed opacity-50' : 'hover:shadow-sm'}`}
                     >
-                      <span className={`text-[10px] font-bold absolute ${allImplemented ? 'left-1 text-white' : 'right-1 text-slate-500'}`}>
-                        {allImplemented ? 'Yes' : 'No'}
+                      <span className={`text-[10px] font-bold absolute ${isSectionEnabled ? 'left-1.5 text-white' : 'right-1.5 text-slate-500'}`}>
+                        {isSectionEnabled ? 'On' : 'Off'}
                       </span>
                       <span
-                        className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform duration-200 ease-in-out ${
-                          allImplemented ? 'translate-x-5' : 'translate-x-1'
+                        className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform duration-200 ease-in-out ${
+                          isSectionEnabled ? 'translate-x-7' : 'translate-x-0.5'
                         }`}
                       />
                     </button>
                   </div>
+
+                  <div className="flex flex-col items-center">
+                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1">Solutions</span>
+                    <div className="flex items-center h-7 px-3 rounded-full bg-slate-200/60 text-slate-700 text-sm font-bold min-w-[70px] justify-center">
+                      <span className={implementedCount > 0 ? 'text-primary' : ''}>{implementedCount}</span>
+                      <span className="mx-1 opacity-40 font-normal">of</span>
+                      <span>{totalSolutions}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col items-center">
+                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1">Credits</span>
+                    <div className="flex items-center h-7 px-3 rounded-full bg-slate-200/60 text-slate-700 text-sm font-bold min-w-[70px] justify-center">
+                      <span className={earned > 0 ? 'text-primary transition-all duration-300' : ''}>{earned}</span>
+                      <span className="mx-1 opacity-40 font-normal">of</span>
+                      <span>{isSectionEnabled ? section.totalCredits : 0}</span>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              <div className="bg-white rounded-lg border border-slate-200 overflow-hidden shadow-sm">
-                <div className="px-6 py-2 bg-slate-50 border-b border-slate-200 h-10 flex items-center justify-between">
-                  {(section.minPoints1 > 0 || section.minPoints2 > 0) ? (
+              <div className={`bg-white rounded-lg border border-slate-200 overflow-hidden shadow-sm ${isSectionEnabled ? '' : 'bg-slate-50'}`}>
+                <div className="px-6 py-2 bg-slate-50 border-b border-slate-200 h-10 flex items-center">
+                  {!isSectionEnabled ? (
+                    <span className="text-[12px] font-bold text-slate-400 uppercase tracking-widest">Section excluded from available credits</span>
+                  ) : (section.minPoints1 > 0 || section.minPoints2 > 0) ? (
                     <span className="text-[12px] font-medium text-slate-500 italic">
                       {section.minPoints2 > 0 && `${section.totalCredits} Credits: Implement ${section.minPoints2} of ${totalSolutions}`}
                       {section.minPoints2 > 0 && section.minPoints1 > 0 && ' | '}
@@ -167,10 +171,6 @@ export const ChecklistSectionList: React.FC<SectionListProps> = ({
                   ) : (
                     <span className="text-[12px] font-medium text-slate-400 uppercase tracking-widest">Standard Point Value</span>
                   )}
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                    <span className="text-[10px] font-bold text-slate-400 uppercase">Live Updates Enabled</span>
-                  </div>
                 </div>
                 <div className="divide-y divide-slate-100">
                   {section.solutions.map((sol: any) => (
@@ -181,7 +181,7 @@ export const ChecklistSectionList: React.FC<SectionListProps> = ({
                       allPhases={allPhases}
                       allGoals={allGoals}
                       onStatusChange={(status) => onStatusChange(sol.id, status)}
-                      readOnly={readOnly}
+                      readOnly={readOnly || !isSectionEnabled}
                     />
                   ))}
                 </div>

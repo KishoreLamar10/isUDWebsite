@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { calculateProjectScore } from '@/lib/scoring';
+import { sortChecklistHierarchy } from '@/lib/naturalSort';
 
 export async function POST(req: Request) {
   try {
@@ -147,9 +149,44 @@ export async function GET() {
       orderBy: {
         createdAt: 'desc',
       },
+      include: {
+        responses: true,
+        sectionToggles: true,
+      },
     });
 
-    return NextResponse.json(projects);
+    const chapters = sortChecklistHierarchy(await prisma.chapter.findMany({
+      include: {
+        sections: {
+          include: {
+            solutions: {
+              select: { id: true, points: true, isMandatory: true, standardNumber: true },
+            },
+          },
+        },
+      },
+    }));
+
+    const projectsWithScores = projects.map((project) => {
+      const scores = calculateProjectScore(chapters, project.responses, project.sectionToggles);
+      const totalAvailable = scores.chapterScores.reduce((sum, chapter) => sum + chapter.total, 0);
+      const scorePercentage = totalAvailable > 0
+        ? ((scores.totalScore + scores.totalBonus) / totalAvailable) * 100
+        : 0;
+
+      return {
+        ...project,
+        score: scores.totalScore,
+        totalEarned: scores.totalScore,
+        totalAvailable,
+        bonus: scores.totalBonus,
+        scorePercentage,
+        responses: undefined,
+        sectionToggles: undefined,
+      };
+    });
+
+    return NextResponse.json(projectsWithScores);
   } catch (error: any) {
     console.error('Error fetching projects:', error);
     return NextResponse.json(

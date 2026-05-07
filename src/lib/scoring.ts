@@ -140,10 +140,13 @@ export function calculateProjectScore(
 
   const chapterScores = chapters.map((chapter) => {
     let chapterEarned = 0;
+    let chapterAvailable = 0;
 
     chapter.sections.forEach((section) => {
       const isEnabled = toggleMap.get(section.id) !== false;
       if (!isEnabled) return;
+
+      chapterAvailable += section.totalCredits;
 
       const implementedSolutions = section.solutions.filter(
         (sol) => responseMap.get(sol.id) === 'IMPLEMENTED'
@@ -203,8 +206,8 @@ export function calculateProjectScore(
 
     return {
       id: chapter.id,
-      earned: Math.min(chapterEarned, chapter.totalCredits),
-      total: chapter.totalCredits,
+      earned: Math.min(chapterEarned, chapterAvailable),
+      total: chapterAvailable,
     };
   });
 

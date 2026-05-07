@@ -3,18 +3,11 @@
 import React, { useState } from 'react';
 import { Check, Edit3, Minus, Plus, X } from 'lucide-react';
 import Link from 'next/link';
+import type { PreliminaryStatus } from './PreliminaryChecklistInfo';
 
 interface PreliminaryProgressProps {
   projectId: string;
-  status: {
-    failedSections: string[];
-    missingMandatorySections: string[];
-    activeSectionsCount: number;
-    scorePercentage: number;
-    isThresholdMet: boolean;
-    isQualifying: boolean;
-    isMandatoryMet: boolean;
-  };
+  status: PreliminaryStatus;
   totalEarned: number;
   bonus: number;
 }

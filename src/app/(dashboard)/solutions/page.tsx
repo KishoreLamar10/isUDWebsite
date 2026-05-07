@@ -1,8 +1,9 @@
 import BrowseSolutionsClient from '@/components/BrowseSolutionsClient';
 import { prisma } from '@/lib/prisma';
+import { sortChecklistHierarchy } from '@/lib/naturalSort';
 
 export default async function BrowseSolutionsPage() {
-  const chapters = await prisma.chapter.findMany({
+  const chapters = sortChecklistHierarchy(await prisma.chapter.findMany({
     orderBy: { number: 'asc' },
     include: {
       sections: {
@@ -18,7 +19,7 @@ export default async function BrowseSolutionsPage() {
         },
       },
     },
-  });
+  }));
 
   return <BrowseSolutionsClient chapters={chapters} />;
 }

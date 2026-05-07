@@ -137,6 +137,15 @@ export default function ProjectOverview({ id: propId }: { id?: string }) {
     );
   }
 
+  const canSubmitProject = Boolean(
+    project.certificationStatus?.isQualifying &&
+    project.certificationStatus?.isThresholdMet &&
+    project.certificationStatus?.isMandatoryMet
+  );
+  const submitTitle = canSubmitProject
+    ? 'Ready to submit'
+    : 'Complete the preliminary checklist before submitting.';
+
   return (
     <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
 
@@ -175,7 +184,13 @@ export default function ProjectOverview({ id: propId }: { id?: string }) {
                   <Edit size={16} /> Edit Profile
                 </Button>
               </Link>
-              <Button variant="primary" className="gap-2 text-sm bg-slate-700 hover:bg-slate-800">
+              <Button
+                variant="primary"
+                className="gap-2 text-sm bg-slate-700 hover:bg-slate-800 disabled:bg-slate-400"
+                disabled={!canSubmitProject}
+                title={submitTitle}
+                aria-disabled={!canSubmitProject}
+              >
                 <Send size={16} /> Submit Project
               </Button>
             </>

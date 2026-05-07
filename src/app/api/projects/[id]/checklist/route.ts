@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { sortChecklistHierarchy } from '@/lib/naturalSort';
 
 export async function GET(
   req: Request,
@@ -53,7 +54,7 @@ export async function GET(
     const userStatus = membership?.status || 'ACTIVE';
 
     // Fetch full hierarchy
-    const chapters = await prisma.chapter.findMany({
+    const chapters = sortChecklistHierarchy(await prisma.chapter.findMany({
       orderBy: { number: 'asc' },
       include: {
         sections: {
@@ -69,7 +70,7 @@ export async function GET(
           },
         },
       },
-    });
+    }));
 
     // Fetch existing responses and toggles for this project
     const responses = await prisma.projectResponse.findMany({

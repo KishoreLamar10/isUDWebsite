@@ -10,7 +10,13 @@ Install dependencies:
 npm install
 ```
 
-Apply database migrations and seed the reference data:
+Create a local env file:
+
+```powershell
+cp .env.example .env.local
+```
+
+Update `.env.local` with your Neon `DATABASE_URL`, then apply database migrations and seed the reference data:
 
 ```powershell
 npx prisma migrate deploy
@@ -44,4 +50,11 @@ Open [http://localhost:3001](http://localhost:3001).
 
 ## Notes
 
-Keep secrets in `.env`; it is ignored by git.
+Keep secrets in `.env.local` or `.env`; both are ignored by git.
+For Vercel production, set the variables from `.env.production.example` in the Vercel dashboard:
+
+- `DATABASE_URL`: Neon Postgres connection string, usually the pooled `*-pooler.neon.tech` URL with `sslmode=require`.
+- `NEXTAUTH_URL`: `https://isud-website.vercel.app` unless you add a custom production domain.
+- `NEXTAUTH_SECRET`: a stable random secret. Generate one with `openssl rand -base64 32`.
+- `NEXT_PUBLIC_TURNSTILE_SITE_KEY`: Cloudflare Turnstile site key for registration human verification.
+- `TURNSTILE_SECRET_KEY`: Cloudflare Turnstile secret key used by `/api/register` to verify registrations.

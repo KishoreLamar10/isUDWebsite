@@ -7,6 +7,42 @@ import Button from './ui/Button';
 
 const tableHeaders = ['ID', 'Name', 'Owner', 'Status', 'Score'];
 
+const projectStatusLabels: Record<string, string> = {
+  ONGOING: 'Ongoing',
+  COMPLETED: 'Certified',
+  INACTIVE: 'Inactive',
+};
+
+function ScoreCircle({ score, size = 44 }: { score: number; size?: number }) {
+  const radius = (size - 10) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const progress = Math.min(Math.max(score, 0), 100) / 100;
+  const strokeDashoffset = circumference * (1 - progress);
+
+  return (
+    <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
+      <svg width={size} height={size} className="-rotate-90">
+        <circle cx={size / 2} cy={size / 2} r={radius} stroke="#e2e8f0" strokeWidth="5" fill="none" />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          stroke="#F7941D"
+          strokeWidth="5"
+          fill="none"
+          strokeDasharray={circumference}
+          strokeDashoffset={strokeDashoffset}
+          strokeLinecap="round"
+          className="transition-all duration-700"
+        />
+      </svg>
+      <span className="absolute text-xs font-extrabold text-primary">{Math.round(score)}</span>
+    </div>
+  );
+}
+
+const tableColumnClass = 'grid-cols-[120px_minmax(280px,1.45fr)_minmax(220px,1fr)_180px_120px]';
+
 export default function ProjectTable() {
   const [projects, setProjects] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -54,7 +90,7 @@ export default function ProjectTable() {
       })
       .sort((a, b) => {
         if (sortBy === 'name') return (a.projectName || '').localeCompare(b.projectName || '');
-        if (sortBy === 'score') return (b.score || 0) - (a.score || 0);
+        if (sortBy === 'score') return (b.scorePercentage || 0) - (a.scorePercentage || 0);
         return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
       });
   }, [projects, filterBy, query, sortBy]);
@@ -88,6 +124,8 @@ export default function ProjectTable() {
           <label className="relative">
             <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
             <input
+              suppressHydrationWarning
+              autoComplete="off"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Search projects"
@@ -117,9 +155,7 @@ export default function ProjectTable() {
             >
               <option value="ALL">All</option>
               <option value="ONGOING">Ongoing</option>
-              <option value="COMPLETED">Completed</option>
-              <option value="IN_REVIEW">In-Review</option>
-              <option value="PENDING">Pending</option>
+              <option value="COMPLETED">Certified</option>
               <option value="INACTIVE">Inactive</option>
             </select>
           </div>
@@ -128,7 +164,7 @@ export default function ProjectTable() {
 
       {/* Table Section */}
       <div className="bg-white border border-slate-200 rounded-sm shadow-sm overflow-hidden">
-        <div className="grid grid-cols-5 border-b border-slate-100 bg-slate-50/50">
+        <div className={`grid ${tableColumnClass} min-w-[900px] border-b border-slate-100 bg-slate-50/50`}>
           {tableHeaders.map((header) => (
             <div key={header} className="px-6 py-4 text-xs font-bold text-muted uppercase tracking-widest text-center">
               {header}
@@ -183,38 +219,40 @@ export default function ProjectTable() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full">
-              <tbody className="divide-y divide-slate-100">
-                {visibleProjects.map((project) => (
-                  <tr key={project.id} className="hover:bg-slate-50/50 transition-colors group">
-                    <td className="px-6 py-4 text-xs font-mono text-slate-400 text-center">
+            <div className="min-w-[900px] divide-y divide-slate-100">
+              {visibleProjects.map((project) => (
+                <div
+                  key={project.id}
+                  className={`grid ${tableColumnClass} min-h-[72px] items-center hover:bg-slate-50/50 transition-colors group`}
+                >
+                    <div className="px-6 py-3 text-xs font-mono text-slate-400 text-center">
                       #{project.projectNumber ?? project.id.slice(0, 8)}
-                    </td>
-                    <td className="px-6 py-4 text-sm font-bold text-center">
+                    </div>
+                    <div className="px-6 py-3 text-sm font-bold text-center">
                       <Link href={`/projects/${project.id}`} className="text-slate-800 hover:text-secondary transition-colors underline-offset-2 hover:underline">
                         {project.projectName}
                       </Link>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-slate-600 text-center">
+                    </div>
+                    <div className="px-6 py-3 text-sm text-slate-600 text-center">
                       {project.ownerName || 'N/A'}
-                    </td>
-                    <td className="px-6 py-4 text-center">
+                    </div>
+                    <div className="px-6 py-3 text-center">
                       <span className={`inline-flex px-3 py-1 rounded-full text-[10px] font-bold tracking-widest uppercase ${
                         project.status === 'COMPLETED' ? 'bg-green-100 text-green-700' :
                         project.status === 'ONGOING' ? 'bg-blue-100 text-blue-700' :
-                        project.status === 'IN_REVIEW' ? 'bg-amber-100 text-amber-700' :
                         'bg-slate-100 text-slate-600'
                       }`}>
-                        {project.status.replace('_', ' ')}
+                        {projectStatusLabels[project.status] || project.status.replace('_', ' ')}
                       </span>
-                    </td>
-                    <td className="px-6 py-4 text-sm font-bold text-slate-800 text-center">
-                      {project.score.toFixed(1)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                    </div>
+                    <div className="px-6 py-3 text-center">
+                      <div className="mx-auto flex h-11 w-11 items-center justify-center">
+                        <ScoreCircle score={project.scorePercentage || 0} />
+                      </div>
+                    </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>

@@ -83,8 +83,10 @@ async function main() {
     const h3Num = cols[9]
     const h3Title = cols[10]
     const h3Credits = parseFloat(cols[11]) || 0
+    const creditNumber = cols[1]
 
-    const tsvRow = tsvDataByCredit[h2Num] || tsvDataByCredit[h3Num]
+    const sectionCreditNumber = `${h1Num}.${h2Num}`
+    const tsvRow = tsvDataByCredit[hLevel === 'H2' ? creditNumber : sectionCreditNumber]
     const min1 = parseInt(tsvRow?.[7]) || 0
     const min2 = parseInt(tsvRow?.[8]) || 0
     const min3 = parseInt(tsvRow?.[9]) || 0
@@ -150,6 +152,7 @@ async function main() {
       const h3Num = cols[10]    // H3#
       const h3Title = cols[11]  // H3_Sec_Title
       const h3Credits = parseFloat(cols[12]) || 0
+      const creditNumber = `${h1Num}.${h2Num}`
       const text = cols[14]
       const goalsStr = cols[16] || ''
       const phasesStr = cols[17] || ''
@@ -167,14 +170,18 @@ async function main() {
       })
 
       // Ensure Section exists (auto-create from solution row data)
-      const tsvRow = tsvDataByCredit[h2Num]
+      const tsvRow = tsvDataByCredit[creditNumber]
       const min1 = parseInt(tsvRow?.[7]) || 0
       const min2 = parseInt(tsvRow?.[8]) || 0
       const min3 = parseInt(tsvRow?.[9]) || 0
 
       const section = await prisma.section.upsert({
         where: { chapterId_number: { chapterId: chapter.id, number: h2Num } },
-        update: {},
+        update: {
+          minPoints1: min1,
+          minPoints2: min2,
+          minPoints3: min3,
+        },
         create: {
           number: h2Num, title: h2Title || '', totalCredits: h2Credits,
           chapterId: chapter.id, minPoints1: min1, minPoints2: min2, minPoints3: min3

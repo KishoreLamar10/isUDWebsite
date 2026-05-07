@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { calculateProjectScore } from '@/lib/scoring';
+import { sortChecklistHierarchy } from '@/lib/naturalSort';
 
 export async function GET(
   req: Request,
@@ -58,7 +59,7 @@ export async function GET(
     const userRole = systemRole === 'ADMIN' || project.userId === userId ? 'ADMIN' : (membership?.permission || 'VIEWER');
 
     // Calculate scores using universal utility
-    const chapters = await prisma.chapter.findMany({
+    const chapters = sortChecklistHierarchy(await prisma.chapter.findMany({
       orderBy: { number: 'asc' },
       include: {
         sections: {
@@ -69,7 +70,7 @@ export async function GET(
           },
         },
       },
-    });
+    }));
 
     const scores = calculateProjectScore(
       chapters || [],
@@ -89,7 +90,7 @@ export async function GET(
       };
     }).filter(Boolean);
 
-    const totalAvailable = (chapters || []).reduce((sum, ch) => sum + (ch.totalCredits || 0), 0);
+    const totalAvailable = (scores.chapterScores || []).reduce((sum, ch) => sum + (ch.total || 0), 0);
     const scorePercentage = totalAvailable > 0 ? ((scores.totalScore + scores.totalBonus) / totalAvailable) * 100 : 0;
     const certificationThreshold = 78;
 

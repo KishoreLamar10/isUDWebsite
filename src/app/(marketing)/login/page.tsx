@@ -4,11 +4,23 @@ import { redirect } from 'next/navigation';
 import LoginForm from '@/components/LoginForm';
 import { authOptions } from '@/lib/auth';
 
-export default async function LoginPage() {
+function getSafeCallbackUrl(value: string | string[] | undefined) {
+  const candidate = Array.isArray(value) ? value[0] : value;
+  if (!candidate || !candidate.startsWith('/') || candidate.startsWith('//')) return '/';
+  return candidate;
+}
+
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ callbackUrl?: string | string[] }>;
+}) {
   const session = await getServerSession(authOptions);
+  const { callbackUrl: rawCallbackUrl } = await searchParams;
+  const callbackUrl = getSafeCallbackUrl(rawCallbackUrl);
 
   if (session) {
-    redirect('/');
+    redirect(callbackUrl);
   }
 
   return (

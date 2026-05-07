@@ -1,12 +1,19 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Mail, Phone, Loader2 } from 'lucide-react';
 import Button from './ui/Button';
 
+function getSafeCallbackUrl(value: string | null) {
+  if (!value || !value.startsWith('/') || value.startsWith('//')) return '/';
+  return value;
+}
+
 export default function RegisterForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = getSafeCallbackUrl(searchParams.get('callbackUrl'));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
@@ -50,7 +57,9 @@ export default function RegisterForm() {
       }
 
       // Success - Redirect to login with a message
-      router.push('/login?registered=true');
+      const params = new URLSearchParams({ registered: 'true' });
+      if (callbackUrl !== '/') params.set('callbackUrl', callbackUrl);
+      router.push(`/login?${params.toString()}`);
     } catch (err: any) {
       setError(err.message);
     } finally {

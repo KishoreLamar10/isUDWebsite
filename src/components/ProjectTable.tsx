@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useSession } from 'next-auth/react';
 import { Search, Plus, Info } from 'lucide-react';
 import { useCallback, useMemo, useState, useEffect } from 'react';
 import Button from './ui/Button';
@@ -44,6 +45,7 @@ function ScoreCircle({ score, size = 44 }: { score: number; size?: number }) {
 const tableColumnClass = 'grid-cols-[120px_minmax(280px,1.45fr)_minmax(220px,1fr)_180px_120px]';
 
 export default function ProjectTable() {
+  const { data: session } = useSession();
   const [projects, setProjects] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [sortBy, setSortBy] = useState('date');
@@ -95,6 +97,10 @@ export default function ProjectTable() {
       });
   }, [projects, filterBy, query, sortBy]);
 
+  const newProjectHref = session ? '/projects/new' : '/register?callbackUrl=/projects/new';
+  const newProjectLabel = session ? 'Add Project' : 'Create Account to Start Project';
+  const emptyProjectLabel = session ? 'Start a Project' : 'Create Account to Start Project';
+
   return (
     <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
       
@@ -106,10 +112,10 @@ export default function ProjectTable() {
       {/* Controls Bar */}
       <div className="flex flex-col sm:flex-row justify-between items-center gap-6">
         <div className="flex flex-wrap items-center gap-4">
-          <Link href="/projects/new">
+          <Link href={newProjectHref}>
             <Button variant="primary" className="gap-2 px-5 bg-[#002a54] hover:bg-[#001d3d]">
               <Plus size={18} />
-              Add Project
+              {newProjectLabel}
             </Button>
           </Link>
           
@@ -195,10 +201,10 @@ export default function ProjectTable() {
                   Browse Solutions
                 </Button>
               </Link>
-              <Link href="/projects/new">
+              <Link href={newProjectHref}>
                 <Button variant="primary" className="gap-3">
                   <Plus size={22} className="opacity-70" />
-                  Start a Project
+                  {emptyProjectLabel}
                 </Button>
               </Link>
             </div>

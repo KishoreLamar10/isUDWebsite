@@ -5,11 +5,23 @@ import LoginForm from "@/components/LoginForm";
 import RegisterForm from "@/components/RegisterForm";
 import { authOptions } from "@/lib/auth";
 
-export default async function RegisterPage() {
+function getSafeCallbackUrl(value: string | string[] | undefined) {
+  const candidate = Array.isArray(value) ? value[0] : value;
+  if (!candidate || !candidate.startsWith('/') || candidate.startsWith('//')) return '/';
+  return candidate;
+}
+
+export default async function RegisterPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ callbackUrl?: string | string[] }>;
+}) {
   const session = await getServerSession(authOptions);
+  const { callbackUrl: rawCallbackUrl } = await searchParams;
+  const callbackUrl = getSafeCallbackUrl(rawCallbackUrl);
 
   if (session) {
-    redirect("/");
+    redirect(callbackUrl);
   }
 
   return (

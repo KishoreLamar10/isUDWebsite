@@ -6,9 +6,15 @@ import { Mail, Lock, Loader2 } from 'lucide-react';
 import { signIn } from 'next-auth/react';
 import Button from './ui/Button';
 
+function getSafeCallbackUrl(value: string | null) {
+  if (!value || !value.startsWith('/') || value.startsWith('//')) return '/';
+  return value;
+}
+
 export default function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const callbackUrl = getSafeCallbackUrl(searchParams.get('callbackUrl'));
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -48,8 +54,8 @@ export default function LoginForm() {
         // NextAuth returns specific errors from the authorize function
         setError(result.error);
       } else {
-        // Success - Refresh and redirect to dashboard
-        router.push('/');
+        // Success - Refresh and redirect to the original intended route
+        router.push(callbackUrl);
         router.refresh();
       }
     } catch {

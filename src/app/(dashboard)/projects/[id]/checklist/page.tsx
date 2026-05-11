@@ -226,7 +226,7 @@ export default function ChecklistPage({ params }: { params: Promise<Params> }) {
   const scorePercentage = totalAvailable > 0
     ? ((checklistScore.totalScore + checklistScore.totalBonus) / totalAvailable) * 100
     : 0;
-  const scoreValue = Math.round(scorePercentage);
+  const scoreValue = checklistScore.totalScore + checklistScore.totalBonus;
   const preliminaryStatus = {
     failedSections: checklistScore.failedSections,
     missingMandatorySections: checklistScore.missingMandatorySections,

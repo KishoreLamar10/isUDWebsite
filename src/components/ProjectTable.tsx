@@ -92,7 +92,11 @@ export default function ProjectTable() {
       })
       .sort((a, b) => {
         if (sortBy === 'name') return (a.projectName || '').localeCompare(b.projectName || '');
-        if (sortBy === 'score') return (b.scorePercentage || 0) - (a.scorePercentage || 0);
+        if (sortBy === 'score') {
+          const aScore = (a.totalEarned || a.score || 0) + (a.bonus || 0);
+          const bScore = (b.totalEarned || b.score || 0) + (b.bonus || 0);
+          return bScore - aScore;
+        }
         return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
       });
   }, [projects, filterBy, query, sortBy]);
@@ -253,7 +257,7 @@ export default function ProjectTable() {
                     </div>
                     <div className="px-6 py-3 text-center">
                       <div className="mx-auto flex h-11 w-11 items-center justify-center">
-                        <ScoreCircle score={project.scorePercentage || 0} />
+                        <ScoreCircle score={(project.totalEarned || project.score || 0) + (project.bonus || 0)} />
                       </div>
                     </div>
                 </div>

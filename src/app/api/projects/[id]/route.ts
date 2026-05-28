@@ -79,19 +79,39 @@ export async function GET(
     );
 
     // Group scores for display
+    const legacyChapterApplicable = project.legacyChapterApplicable
+      ?.split(',')
+      .map((value) => Number(value.trim()));
+    const legacyChapterEarned = project.legacyChapterEarned
+      ?.split(',')
+      .map((value) => Number(value.trim()));
+    const hasLegacyScores = project.legacyAwardPercentage !== null;
+
     const formattedChapterScores = (scores.chapterScores || []).map((score, index) => {
       const chapter = chapters[index];
       if (!chapter) return null;
       return {
         number: chapter.number,
         title: chapter.title,
-        totalCredits: score.total,
-        earned: score.earned,
+        totalCredits: hasLegacyScores && Number.isFinite(legacyChapterApplicable?.[index])
+          ? legacyChapterApplicable[index]
+          : score.total,
+        earned: hasLegacyScores && Number.isFinite(legacyChapterEarned?.[index])
+          ? legacyChapterEarned[index]
+          : score.earned,
       };
     }).filter(Boolean);
 
-    const totalAvailable = (scores.chapterScores || []).reduce((sum, ch) => sum + (ch.total || 0), 0);
-    const scorePercentage = totalAvailable > 0 ? ((scores.totalScore + scores.totalBonus) / totalAvailable) * 100 : 0;
+    const totalAvailable = hasLegacyScores
+      ? project.legacyApplicableCredits || 0
+      : (scores.chapterScores || []).reduce((sum, ch) => sum + (ch.total || 0), 0);
+    const totalEarned = hasLegacyScores ? project.legacyEarnedCredits || 0 : scores.totalScore || 0;
+    const totalBonus = hasLegacyScores ? project.legacyBonusCredits || 0 : scores.totalBonus;
+    const scorePercentage = hasLegacyScores
+      ? project.legacyAwardPercentage || 0
+      : totalAvailable > 0
+        ? ((scores.totalScore + scores.totalBonus) / totalAvailable) * 100
+        : 0;
     const certificationThreshold = 78;
 
     return NextResponse.json({
@@ -99,9 +119,9 @@ export async function GET(
       userRole,
       userStatus: membership?.status || 'ACTIVE', // Owners are always ACTIVE
       chapterScores: formattedChapterScores,
-      totalEarned: scores.totalScore || 0,
+      totalEarned,
       totalAvailable,
-      bonus: scores.totalBonus,
+      bonus: totalBonus,
       certificationStatus: {
         failedSections: scores.failedSections,
         missingMandatorySections: scores.missingMandatorySections,

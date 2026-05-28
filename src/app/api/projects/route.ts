@@ -169,17 +169,24 @@ export async function GET() {
 
     const projectsWithScores = projects.map((project) => {
       const scores = calculateProjectScore(chapters, project.responses, project.sectionToggles);
-      const totalAvailable = scores.chapterScores.reduce((sum, chapter) => sum + chapter.total, 0);
-      const scorePercentage = totalAvailable > 0
-        ? ((scores.totalScore + scores.totalBonus) / totalAvailable) * 100
-        : 0;
+      const hasLegacyScores = project.legacyAwardPercentage !== null;
+      const totalAvailable = hasLegacyScores
+        ? project.legacyApplicableCredits || 0
+        : scores.chapterScores.reduce((sum, chapter) => sum + chapter.total, 0);
+      const totalEarned = hasLegacyScores ? project.legacyEarnedCredits || 0 : scores.totalScore;
+      const bonus = hasLegacyScores ? project.legacyBonusCredits || 0 : scores.totalBonus;
+      const scorePercentage = hasLegacyScores
+        ? project.legacyAwardPercentage || 0
+        : totalAvailable > 0
+          ? ((scores.totalScore + scores.totalBonus) / totalAvailable) * 100
+          : 0;
 
       return {
         ...project,
-        score: scores.totalScore,
-        totalEarned: scores.totalScore,
+        score: totalEarned,
+        totalEarned,
         totalAvailable,
-        bonus: scores.totalBonus,
+        bonus,
         scorePercentage,
         responses: undefined,
         sectionToggles: undefined,

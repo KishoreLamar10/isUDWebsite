@@ -84,6 +84,12 @@ model Project {
   services      String[]          @default([])
   status        ProjectStatus     @default(ONGOING)
   score         Float             @default(0)
+  legacyApplicableCredits Float?
+  legacyEarnedCredits     Float?
+  legacyBonusCredits      Float?
+  legacyAwardPercentage   Float?
+  legacyChapterApplicable String?
+  legacyChapterEarned     String?
   userId        String
   createdAt     DateTime          @default(now())
   updatedAt     DateTime          @updatedAt

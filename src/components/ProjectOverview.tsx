@@ -160,11 +160,6 @@ export default function ProjectOverview({ id: propId }: { id?: string }) {
       <div className="bg-white border border-slate-200 rounded-sm px-6 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-sm">
         <div className="flex items-center gap-4">
           <h1 className="text-xl font-bold text-primary tracking-tight">{project.projectName}</h1>
-          {project.projectNumber && (
-            <span className="px-2.5 py-1 bg-slate-100 text-slate-500 text-[10px] font-bold uppercase tracking-widest rounded-full border border-slate-200">
-              Project #{project.projectNumber}
-            </span>
-          )}
           {isReadOnly && (
             <span className="px-3 py-1 bg-slate-100 text-slate-500 text-[10px] font-bold uppercase tracking-widest rounded-full border border-slate-200">
               Read-Only Mode

@@ -257,7 +257,7 @@ export default function ProjectTable() {
                     </div>
                     <div className="px-6 py-3 text-center">
                       <div className="mx-auto flex h-11 w-11 items-center justify-center">
-                        <ScoreCircle score={(project.totalEarned || project.score || 0) + (project.bonus || 0)} />
+                        <ScoreCircle score={project.scorePercentage ?? ((project.totalEarned || project.score || 0) + (project.bonus || 0))} />
                       </div>
                     </div>
                 </div>

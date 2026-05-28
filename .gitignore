@@ -50,3 +50,9 @@ yarn-error.log*
 next-env.d.ts
 
 /src/generated/prisma
+
+# legacy exports and private database dumps
+legacy-export/
+*.sql
+*.sql.zip
+*.zip

@@ -14,6 +14,14 @@ export default async function BrowseSolutionsPage() {
             include: {
               goals: true,
               phases: true,
+              figures: {
+                where: {
+                  url: {
+                    not: null,
+                  },
+                },
+                orderBy: { label: 'asc' },
+              },
             },
           },
         },

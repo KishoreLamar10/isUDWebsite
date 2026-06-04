@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Plus, Minus, Check } from 'lucide-react';
+import Image from 'next/image';
+import { Plus, Minus, Check, Image as ImageIcon } from 'lucide-react';
 import { ResponseStatus } from '@prisma/client';
 
 interface SolutionProps {
@@ -22,6 +23,16 @@ export const ChecklistSolutionItem: React.FC<SolutionProps> = ({
   readOnly = false,
 }) => {
   const [expanded, setExpanded] = useState(false);
+  const [figuresExpanded, setFiguresExpanded] = useState(false);
+  const figures = Array.isArray(solution.figures)
+    ? [
+        ...new Map(
+          solution.figures
+            .filter((figure: any) => figure.url)
+            .map((figure: any) => [`${figure.number || ''}|${figure.url}`, figure])
+        ).values(),
+      ]
+    : [];
 
   const toggleImplemented = () => {
     onStatusChange(status === 'IMPLEMENTED' ? 'NOT_IMPLEMENTED' : 'IMPLEMENTED');
@@ -47,25 +58,68 @@ export const ChecklistSolutionItem: React.FC<SolutionProps> = ({
         </div>
 
         <div className="flex items-center gap-2 pr-2">
+          {figures.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setFiguresExpanded((value) => !value)}
+              className={`inline-flex h-8 w-8 items-center justify-center rounded-md border transition-colors ${
+                figuresExpanded
+                  ? 'border-primary bg-primary text-white'
+                  : 'border-slate-300 bg-white text-primary hover:border-secondary hover:text-secondary'
+              }`}
+              aria-label={figuresExpanded ? 'Hide solution figure' : 'Show solution figure'}
+              aria-expanded={figuresExpanded}
+            >
+              <ImageIcon className="h-4 w-4" />
+            </button>
+          )}
+
           {/* Status Selector - Single Toggle */}
           <button
             onClick={() => !readOnly && toggleImplemented()}
             disabled={readOnly}
-            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 focus:outline-none ${
+            className={`relative inline-flex h-8 w-16 items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-secondary focus:ring-offset-2 ${
               status === 'IMPLEMENTED' ? 'bg-primary' : 'bg-slate-300'
             } ${readOnly ? 'cursor-not-allowed opacity-50' : ''}`}
           >
-            <span className={`text-[10px] font-bold absolute ${status === 'IMPLEMENTED' ? 'left-1 text-white' : 'right-1 text-slate-500'}`}>
+            <span className={`absolute text-[11px] font-bold leading-none ${status === 'IMPLEMENTED' ? 'left-3 text-white' : 'right-3 text-slate-500'}`}>
               {status === 'IMPLEMENTED' ? 'Yes' : 'No'}
             </span>
             <span
-              className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform duration-200 ease-in-out ${
-                status === 'IMPLEMENTED' ? 'translate-x-5' : 'translate-x-1'
+              className={`inline-block h-7 w-7 transform rounded-full bg-white shadow-sm transition-transform duration-200 ease-in-out ${
+                status === 'IMPLEMENTED' ? 'translate-x-8' : 'translate-x-0.5'
               }`}
             />
           </button>
         </div>
       </div>
+
+      {figuresExpanded && figures.length > 0 && (
+        <div className="border-t border-slate-100 bg-white px-10 py-5">
+          <div className="space-y-5">
+            {figures.map((figure: any) => (
+              <figure key={figure.id} className="rounded-md border border-slate-200 bg-slate-50 p-4 shadow-sm">
+                <Image
+                  src={figure.url}
+                  alt={figure.altTag || figure.caption || figure.number || 'Solution figure'}
+                  width={900}
+                  height={600}
+                  className="mx-auto max-h-[520px] w-auto max-w-full rounded-sm object-contain"
+                  loading="lazy"
+                  unoptimized
+                />
+                {(figure.caption || figure.number) && (
+                  <figcaption className="mt-3 text-center text-xs leading-5 text-slate-600">
+                    {figure.number && <span className="font-bold text-primary">{figure.number.replace('.png', '')}</span>}
+                    {figure.number && figure.caption ? ': ' : ''}
+                    {figure.caption}
+                  </figcaption>
+                )}
+              </figure>
+            ))}
+          </div>
+        </div>
+      )}
 
       {expanded && (
         <div className="bg-slate-50/50 p-6 border-t border-slate-100 animate-in fade-in slide-in-from-top-2 duration-200">

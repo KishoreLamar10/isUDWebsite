@@ -1,7 +1,8 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { ArrowRight, ChevronRight, Minus, Plus, Printer, Search } from 'lucide-react';
+import Image from 'next/image';
+import { ArrowRight, ChevronRight, Image as ImageIcon, Minus, Plus, Printer, Search } from 'lucide-react';
 import Breadcrumbs from '@/components/ui/Breadcrumbs';
 
 type Solution = {
@@ -13,6 +14,13 @@ type Solution = {
   instruction: string | null;
   goals: { id: string; text: string }[];
   phases: { id: string; name: string }[];
+  figures: {
+    id: string;
+    number: string | null;
+    caption: string | null;
+    altTag: string | null;
+    url: string | null;
+  }[];
 };
 
 type Section = {
@@ -211,6 +219,13 @@ export default function BrowseSolutionsClient({ chapters }: BrowseSolutionsClien
                         <div className="divide-y divide-slate-100 rounded-sm border border-slate-200">
                           {section.solutions.map((solution) => {
                             const expanded = !!expandedSolutionIds[solution.id];
+                            const figures = [
+                              ...new Map(
+                                (solution.figures || [])
+                                  .filter((figure) => figure.url)
+                                  .map((figure) => [`${figure.number || ''}|${figure.url}`, figure])
+                              ).values(),
+                            ];
                             return (
                               <div key={solution.id} className="bg-white">
                                 <button
@@ -232,6 +247,12 @@ export default function BrowseSolutionsClient({ chapters }: BrowseSolutionsClien
                                       <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-500">
                                         {solution.points} pts
                                       </span>
+                                      {figures.length > 0 && (
+                                        <span className="inline-flex items-center gap-1 rounded border border-primary/20 bg-primary/5 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-primary">
+                                          <ImageIcon className="h-3 w-3" />
+                                          {figures.length}
+                                        </span>
+                                      )}
                                     </div>
                                     <p className="mt-1 text-sm leading-relaxed text-slate-700">{solution.text}</p>
                                   </div>
@@ -255,6 +276,31 @@ export default function BrowseSolutionsClient({ chapters }: BrowseSolutionsClien
                                         <p className="mt-1">{solution.phases.map((phase) => phase.name).join(', ') || 'None listed'}</p>
                                       </div>
                                     </div>
+                                    {figures.length > 0 && (
+                                      <div className="space-y-4">
+                                        <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400">Figures</p>
+                                        {figures.map((figure) => (
+                                          <figure key={figure.id} className="rounded-md border border-slate-200 bg-white p-4">
+                                            <Image
+                                              src={figure.url || ''}
+                                              alt={figure.altTag || figure.caption || figure.number || 'Solution figure'}
+                                              width={900}
+                                              height={600}
+                                              className="mx-auto max-h-[420px] w-auto max-w-full rounded-sm object-contain"
+                                              loading="lazy"
+                                              unoptimized
+                                            />
+                                            {(figure.caption || figure.number) && (
+                                              <figcaption className="mt-3 text-center text-xs leading-5 text-slate-600">
+                                                {figure.number && <span className="font-bold text-primary">{figure.number.replace('.png', '')}</span>}
+                                                {figure.number && figure.caption ? ': ' : ''}
+                                                {figure.caption}
+                                              </figcaption>
+                                            )}
+                                          </figure>
+                                        ))}
+                                      </div>
+                                    )}
                                   </div>
                                 )}
                               </div>

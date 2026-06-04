@@ -98,6 +98,7 @@ model Project {
   facilityUses  FacilityUse[]     @relation("FacilityUseToProject")
   sectionToggles SectionToggle[]
   teamMembers    TeamMember[]
+  submissions    ProjectSubmission[]
 }
 
 model TeamMember {
@@ -252,6 +253,20 @@ model ProjectResponse {
   @@unique([projectId, solutionId])
 }
 
+model ProjectSubmission {
+  id          String           @id @default(uuid())
+  projectId   String
+  token       String           @unique
+  status      SubmissionStatus @default(PENDING)
+  submittedTo String
+  approvedAt  DateTime?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  project     Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, status])
+}
+
 enum SystemRole {
   USER
   ADMIN
@@ -259,6 +274,7 @@ enum SystemRole {
 
 enum ProjectStatus {
   ONGOING
+  IN_REVIEW
   COMPLETED
   INACTIVE
 }
@@ -268,4 +284,9 @@ enum ResponseStatus {
   NOT_IMPLEMENTED
   PARTIAL
   NOT_APPLICABLE
+}
+
+enum SubmissionStatus {
+  PENDING
+  APPROVED
 }

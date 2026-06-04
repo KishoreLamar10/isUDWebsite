@@ -10,6 +10,7 @@ const tableHeaders = ['ID', 'Name', 'Owner', 'Status', 'Score'];
 
 const projectStatusLabels: Record<string, string> = {
   ONGOING: 'Ongoing',
+  IN_REVIEW: 'Submitted',
   COMPLETED: 'Certified',
   INACTIVE: 'Inactive',
 };
@@ -165,6 +166,7 @@ export default function ProjectTable() {
             >
               <option value="ALL">All</option>
               <option value="ONGOING">Ongoing</option>
+              <option value="IN_REVIEW">Submitted</option>
               <option value="COMPLETED">Certified</option>
               <option value="INACTIVE">Inactive</option>
             </select>
@@ -249,6 +251,7 @@ export default function ProjectTable() {
                     <div className="px-6 py-3 text-center">
                       <span className={`inline-flex px-3 py-1 rounded-full text-[10px] font-bold tracking-widest uppercase ${
                         project.status === 'COMPLETED' ? 'bg-green-100 text-green-700' :
+                        project.status === 'IN_REVIEW' ? 'bg-slate-200 text-slate-700' :
                         project.status === 'ONGOING' ? 'bg-blue-100 text-blue-700' :
                         'bg-slate-100 text-slate-600'
                       }`}>

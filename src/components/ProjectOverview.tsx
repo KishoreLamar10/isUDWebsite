@@ -83,7 +83,9 @@ export default function ProjectOverview({ id: propId }: { id?: string }) {
   const id = propId || params?.id as string;
   const [project, setProject] = useState<ProjectData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSubmittingProject, setIsSubmittingProject] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [submitMessage, setSubmitMessage] = useState<string | null>(null);
 
   const isReadOnly = project?.userRole === 'VIEWER' || project?.userStatus === 'PENDING';
 
@@ -137,14 +139,47 @@ export default function ProjectOverview({ id: propId }: { id?: string }) {
     );
   }
 
+  const isSubmitted = project.status === 'IN_REVIEW';
+  const isCertified = project.status === 'COMPLETED';
   const canSubmitProject = Boolean(
+    !isSubmitted &&
+    !isCertified &&
     project.certificationStatus?.isQualifying &&
     project.certificationStatus?.isThresholdMet &&
     project.certificationStatus?.isMandatoryMet
   );
-  const submitTitle = canSubmitProject
+  const submitTitle = isSubmitted
+    ? 'Project has been submitted for approval.'
+    : isCertified
+      ? 'Project is already certified.'
+      : canSubmitProject
     ? 'Ready to submit'
     : 'Complete the preliminary checklist before submitting.';
+  const submitButtonLabel = isSubmitted ? 'Submitted' : isCertified ? 'Certified' : 'Submit Project';
+
+  const handleSubmitProject = async () => {
+    if (!canSubmitProject || isSubmittingProject) return;
+
+    setIsSubmittingProject(true);
+    setSubmitMessage(null);
+
+    try {
+      const response = await fetch(`/api/projects/${id}/submit`, {
+        method: 'POST',
+      });
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Unable to submit project.');
+      }
+
+      setProject((current) => current ? { ...current, status: data.status || 'IN_REVIEW' } : current);
+    } catch (error: any) {
+      setSubmitMessage(error.message || 'Unable to submit project.');
+    } finally {
+      setIsSubmittingProject(false);
+    }
+  };
 
   return (
     <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
@@ -182,16 +217,24 @@ export default function ProjectOverview({ id: propId }: { id?: string }) {
               <Button
                 variant="primary"
                 className="gap-2 text-sm bg-slate-700 hover:bg-slate-800 disabled:bg-slate-400"
-                disabled={!canSubmitProject}
+                disabled={!canSubmitProject || isSubmittingProject}
                 title={submitTitle}
                 aria-disabled={!canSubmitProject}
+                onClick={handleSubmitProject}
               >
-                <Send size={16} /> Submit Project
+                {isSubmittingProject ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
+                {isSubmittingProject ? 'Submitting...' : submitButtonLabel}
               </Button>
             </>
           )}
         </div>
       </div>
+
+      {submitMessage && (
+        <div className="rounded-sm border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+          {submitMessage}
+        </div>
+      )}
 
       {/* Main 3-Column Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">

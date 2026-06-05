@@ -36,7 +36,9 @@ export default async function EditProjectPage({ params }: { params: Promise<{ id
           }),
     },
     include: {
-      facilityUses: true,
+      facilityUses: {
+        where: { archivedAt: null },
+      },
       teamMembers: {
         where: { userId },
       },

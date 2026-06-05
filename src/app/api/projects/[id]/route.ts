@@ -40,7 +40,9 @@ export async function GET(
             })
       },
       include: {
-        facilityUses: true,
+        facilityUses: {
+          where: { archivedAt: null },
+        },
         responses: true,
         sectionToggles: true,
         teamMembers: {
@@ -60,11 +62,14 @@ export async function GET(
 
     // Calculate scores using universal utility
     const chapters = sortChecklistHierarchy(await prisma.chapter.findMany({
+      where: { archivedAt: null },
       orderBy: { number: 'asc' },
       include: {
         sections: {
+          where: { archivedAt: null },
           include: {
             solutions: {
+              where: { archivedAt: null },
               select: { id: true, points: true, isMandatory: true, standardNumber: true },
             },
           },
@@ -89,15 +94,17 @@ export async function GET(
 
     const formattedChapterScores = (scores.chapterScores || []).map((score, index) => {
       const chapter = chapters[index];
+      const legacyApplicable = legacyChapterApplicable?.[index];
+      const legacyEarned = legacyChapterEarned?.[index];
       if (!chapter) return null;
       return {
         number: chapter.number,
         title: chapter.title,
-        totalCredits: hasLegacyScores && Number.isFinite(legacyChapterApplicable?.[index])
-          ? legacyChapterApplicable[index]
+        totalCredits: hasLegacyScores && Number.isFinite(legacyApplicable)
+          ? legacyApplicable
           : score.total,
-        earned: hasLegacyScores && Number.isFinite(legacyChapterEarned?.[index])
-          ? legacyChapterEarned[index]
+        earned: hasLegacyScores && Number.isFinite(legacyEarned)
+          ? legacyEarned
           : score.earned,
       };
     }).filter(Boolean);
@@ -226,15 +233,19 @@ export async function PATCH(
         },
       },
       include: {
-        facilityUses: true,
+        facilityUses: {
+          where: { archivedAt: null },
+        },
       },
     });
 
     const relevantSections = await prisma.section.findMany({
       where: {
+        archivedAt: null,
         facilityUses: {
           some: {
             name: { in: facilityNames },
+            archivedAt: null,
           },
         },
       },
@@ -243,6 +254,7 @@ export async function PATCH(
 
     const relevantSolutions = await prisma.solution.findMany({
       where: {
+        archivedAt: null,
         sectionId: { in: relevantSections.map((section) => section.id) },
       },
       select: { id: true },

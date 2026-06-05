@@ -14,6 +14,10 @@ interface SolutionProps {
   readOnly?: boolean;
 }
 
+function isDataImage(src: string) {
+  return src.startsWith('data:image/');
+}
+
 export const ChecklistSolutionItem: React.FC<SolutionProps> = ({
   solution,
   status,
@@ -99,15 +103,25 @@ export const ChecklistSolutionItem: React.FC<SolutionProps> = ({
           <div className="space-y-5">
             {figures.map((figure: any) => (
               <figure key={figure.id} className="rounded-md border border-slate-200 bg-slate-50 p-4 shadow-sm">
-                <Image
-                  src={figure.url}
-                  alt={figure.altTag || figure.caption || figure.number || 'Solution figure'}
-                  width={900}
-                  height={600}
-                  className="mx-auto max-h-[520px] w-auto max-w-full rounded-sm object-contain"
-                  loading="lazy"
-                  unoptimized
-                />
+                {isDataImage(figure.url) ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={figure.url}
+                    alt={figure.altTag || figure.caption || figure.number || 'Solution figure'}
+                    className="mx-auto max-h-[520px] w-auto max-w-full rounded-sm object-contain"
+                    loading="lazy"
+                  />
+                ) : (
+                  <Image
+                    src={figure.url}
+                    alt={figure.altTag || figure.caption || figure.number || 'Solution figure'}
+                    width={900}
+                    height={600}
+                    className="mx-auto max-h-[520px] w-auto max-w-full rounded-sm object-contain"
+                    loading="lazy"
+                    unoptimized
+                  />
+                )}
                 {(figure.caption || figure.number) && (
                   <figcaption className="mt-3 text-center text-xs leading-5 text-slate-600">
                     {figure.number && <span className="font-bold text-primary">{figure.number.replace('.png', '')}</span>}

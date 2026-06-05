@@ -57,10 +57,13 @@ export async function POST(
     }
 
     const chapters = await prisma.chapter.findMany({
+      where: { archivedAt: null },
       include: {
         sections: {
+          where: { archivedAt: null },
           include: {
             solutions: {
+              where: { archivedAt: null },
               select: { id: true, points: true, isMandatory: true, standardNumber: true },
             },
           },

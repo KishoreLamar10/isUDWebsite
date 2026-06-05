@@ -22,11 +22,6 @@ export default function LoginForm() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isRecovering, setIsRecovering] = useState(false);
-  const [recoveryStep, setRecoveryStep] = useState<'email' | 'reset'>('email');
-  const [recoveryQuestion, setRecoveryQuestion] = useState('');
-  const [securityAnswer, setSecurityAnswer] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmNewPassword, setConfirmNewPassword] = useState('');
 
   useEffect(() => {
     if (searchParams.get('registered')) {
@@ -79,50 +74,10 @@ export default function LoginForm() {
       });
       const data = await response.json();
 
-      if (!response.ok) throw new Error(data.error || 'Unable to find account');
+      if (!response.ok) throw new Error(data.error || 'Unable to send setup email');
 
-      setRecoveryQuestion(data.securityQuestion);
-      setRecoveryStep('reset');
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setRecoveryLoading(false);
-    }
-  };
-
-  const handlePasswordReset = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setRecoveryLoading(true);
-    setError(null);
-    setSuccess(null);
-
-    if (newPassword !== confirmNewPassword) {
-      setError('Passwords do not match');
-      setRecoveryLoading(false);
-      return;
-    }
-
-    try {
-      const response = await fetch('/api/user/password-recovery', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email,
-          securityAnswer,
-          password: newPassword,
-        }),
-      });
-      const data = await response.json();
-
-      if (!response.ok) throw new Error(data.error || 'Unable to reset password');
-
+      setSuccess(data.message || 'If an account exists for that email, a password setup link has been sent.');
       setIsRecovering(false);
-      setRecoveryStep('email');
-      setSecurityAnswer('');
-      setNewPassword('');
-      setConfirmNewPassword('');
-      setPassword('');
-      setSuccess('Password reset successfully. Please login with your new password.');
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -147,7 +102,10 @@ export default function LoginForm() {
       )}
 
       {isRecovering ? (
-        <form onSubmit={recoveryStep === 'email' ? handleRecoveryLookup : handlePasswordReset} className="space-y-6">
+        <form onSubmit={handleRecoveryLookup} className="space-y-6">
+          <p className="text-sm leading-relaxed text-slate-600">
+            Enter your email and we will send a secure link to set a new password.
+          </p>
           <div className="space-y-2">
             <label className="text-sm font-semibold text-muted uppercase tracking-wider block">E-mail Address</label>
             <div className="relative">
@@ -158,60 +116,12 @@ export default function LoginForm() {
                 className="w-full border border-slate-300 rounded-sm px-4 py-3 text-sm focus:ring-2 focus:ring-secondary focus:border-secondary transition-all outline-none pr-10"
                 placeholder="e-mail address"
                 required
-                disabled={recoveryLoading || recoveryStep === 'reset'}
+                disabled={recoveryLoading}
                 suppressHydrationWarning={true}
               />
               <Mail className="absolute right-3 top-3.5 text-slate-400" size={18} />
             </div>
           </div>
-
-          {recoveryStep === 'reset' && (
-            <>
-              <div className="rounded-sm border border-slate-200 bg-slate-50 p-4">
-                <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400">Security Question</p>
-                <p className="mt-1 text-sm font-semibold text-slate-700">{recoveryQuestion}</p>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-semibold text-muted uppercase tracking-wider block">Security Answer</label>
-                <input
-                  type="text"
-                  value={securityAnswer}
-                  onChange={(e) => setSecurityAnswer(e.target.value)}
-                  className="w-full border border-slate-300 rounded-sm px-4 py-3 text-sm focus:ring-2 focus:ring-secondary focus:border-secondary outline-none transition-all"
-                  placeholder="security answer"
-                  required
-                  disabled={recoveryLoading}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-semibold text-muted uppercase tracking-wider block">New Password</label>
-                <input
-                  type="password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  className="w-full border border-slate-300 rounded-sm px-4 py-3 text-sm focus:ring-2 focus:ring-secondary focus:border-secondary outline-none transition-all"
-                  placeholder="new password"
-                  required
-                  disabled={recoveryLoading}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-semibold text-muted uppercase tracking-wider block">Confirm New Password</label>
-                <input
-                  type="password"
-                  value={confirmNewPassword}
-                  onChange={(e) => setConfirmNewPassword(e.target.value)}
-                  className="w-full border border-slate-300 rounded-sm px-4 py-3 text-sm focus:ring-2 focus:ring-secondary focus:border-secondary outline-none transition-all"
-                  placeholder="confirm new password"
-                  required
-                  disabled={recoveryLoading}
-                />
-              </div>
-            </>
-          )}
 
           <div className="flex items-center justify-between gap-4">
             <button
@@ -220,7 +130,6 @@ export default function LoginForm() {
               disabled={recoveryLoading}
               onClick={() => {
                 setIsRecovering(false);
-                setRecoveryStep('email');
                 setError(null);
               }}
             >
@@ -238,11 +147,7 @@ export default function LoginForm() {
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Working...
                 </>
-              ) : recoveryStep === 'email' ? (
-                'Continue'
-              ) : (
-                'Reset Password'
-              )}
+              ) : 'Send setup link'}
             </Button>
           </div>
         </form>

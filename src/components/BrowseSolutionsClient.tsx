@@ -47,6 +47,10 @@ function cn(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(' ');
 }
 
+function isDataImage(src: string) {
+  return src.startsWith('data:image/');
+}
+
 export default function BrowseSolutionsClient({ chapters }: BrowseSolutionsClientProps) {
   const [activeChapterId, setActiveChapterId] = useState(chapters[0]?.id || '');
   const [activeSectionId, setActiveSectionId] = useState('');
@@ -281,15 +285,25 @@ export default function BrowseSolutionsClient({ chapters }: BrowseSolutionsClien
                                         <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400">Figures</p>
                                         {figures.map((figure) => (
                                           <figure key={figure.id} className="rounded-md border border-slate-200 bg-white p-4">
-                                            <Image
-                                              src={figure.url || ''}
-                                              alt={figure.altTag || figure.caption || figure.number || 'Solution figure'}
-                                              width={900}
-                                              height={600}
-                                              className="mx-auto max-h-[420px] w-auto max-w-full rounded-sm object-contain"
-                                              loading="lazy"
-                                              unoptimized
-                                            />
+                                            {figure.url && isDataImage(figure.url) ? (
+                                              // eslint-disable-next-line @next/next/no-img-element
+                                              <img
+                                                src={figure.url}
+                                                alt={figure.altTag || figure.caption || figure.number || 'Solution figure'}
+                                                className="mx-auto max-h-[420px] w-auto max-w-full rounded-sm object-contain"
+                                                loading="lazy"
+                                              />
+                                            ) : (
+                                              <Image
+                                                src={figure.url || ''}
+                                                alt={figure.altTag || figure.caption || figure.number || 'Solution figure'}
+                                                width={900}
+                                                height={600}
+                                                className="mx-auto max-h-[420px] w-auto max-w-full rounded-sm object-contain"
+                                                loading="lazy"
+                                                unoptimized
+                                              />
+                                            )}
                                             {(figure.caption || figure.number) && (
                                               <figcaption className="mt-3 text-center text-xs leading-5 text-slate-600">
                                                 {figure.number && <span className="font-bold text-primary">{figure.number.replace('.png', '')}</span>}

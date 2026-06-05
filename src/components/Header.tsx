@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useSession, signOut } from 'next-auth/react';
-import { FolderKanban, BookOpen, UserCircle, Home, LogOut, User } from 'lucide-react';
+import { FolderKanban, BookOpen, UserCircle, Home, LogOut, User, ShieldCheck, Users } from 'lucide-react';
 
 const navItems = [
   { label: 'My Projects', href: '/', icon: FolderKanban },
@@ -13,6 +13,7 @@ const navItems = [
 
 export default function Header() {
   const { data: session } = useSession();
+  const isAdmin = (session?.user as any)?.role === 'ADMIN';
 
   return (
     <header className="w-full bg-white border-b border-slate-200 sticky top-0 z-50">
@@ -56,6 +57,24 @@ export default function Header() {
                         <User size={16} />
                         <span className="font-medium">User Profile</span>
                       </Link>
+                      {isAdmin && (
+                        <>
+                          <Link
+                            href="/admin/edit-solutions"
+                            className="flex items-center space-x-3 px-4 py-3 text-sm text-slate-600 hover:bg-slate-50 hover:text-primary transition-colors"
+                          >
+                            <ShieldCheck size={16} />
+                            <span className="font-medium">Admin Dashboard</span>
+                          </Link>
+                          <Link
+                            href="/admin/users"
+                            className="flex items-center space-x-3 px-4 py-3 text-sm text-slate-600 hover:bg-slate-50 hover:text-primary transition-colors"
+                          >
+                            <Users size={16} />
+                            <span className="font-medium">Admin Users</span>
+                          </Link>
+                        </>
+                      )}
                       <button
                         onClick={() => signOut({ callbackUrl: '/register' })}
                         className="w-full flex items-center space-x-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors"

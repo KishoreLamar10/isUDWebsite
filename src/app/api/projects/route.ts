@@ -70,7 +70,9 @@ export async function POST(req: Request) {
         status: 'ONGOING',
       },
       include: {
-        facilityUses: true,
+        facilityUses: {
+          where: { archivedAt: null },
+        },
       },
     });
 
@@ -78,9 +80,11 @@ export async function POST(req: Request) {
     // Find all sections linked to these facility uses
     const relevantSections = await prisma.section.findMany({
       where: {
+        archivedAt: null,
         facilityUses: {
           some: {
             name: { in: facilityNames },
+            archivedAt: null,
           },
         },
       },
@@ -92,6 +96,7 @@ export async function POST(req: Request) {
     // Find all solutions in these sections
     const relevantSolutions = await prisma.solution.findMany({
       where: {
+        archivedAt: null,
         sectionId: { in: sectionIds },
       },
       select: { id: true },
@@ -156,10 +161,13 @@ export async function GET() {
     });
 
     const chapters = sortChecklistHierarchy(await prisma.chapter.findMany({
+      where: { archivedAt: null },
       include: {
         sections: {
+          where: { archivedAt: null },
           include: {
             solutions: {
+              where: { archivedAt: null },
               select: { id: true, points: true, isMandatory: true, standardNumber: true },
             },
           },

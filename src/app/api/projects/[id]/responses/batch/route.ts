@@ -108,7 +108,7 @@ export async function POST(
 
     if (responseSolutionIds.length > 0) {
       const existingSolutions = await prisma.solution.findMany({
-        where: { id: { in: responseSolutionIds } },
+        where: { id: { in: responseSolutionIds }, archivedAt: null },
         select: { id: true },
       });
 
@@ -119,7 +119,7 @@ export async function POST(
 
     if (toggleSectionIds.length > 0) {
       const existingSections = await prisma.section.findMany({
-        where: { id: { in: toggleSectionIds } },
+        where: { id: { in: toggleSectionIds }, archivedAt: null },
         select: { id: true },
       });
 
@@ -169,10 +169,13 @@ export async function POST(
 
     // 3. Recalculate Score
     const chapters = await prisma.chapter.findMany({
+      where: { archivedAt: null },
       include: {
         sections: {
+          where: { archivedAt: null },
           include: {
             solutions: {
+              where: { archivedAt: null },
               select: { id: true, points: true, isMandatory: true, standardNumber: true },
             },
           },

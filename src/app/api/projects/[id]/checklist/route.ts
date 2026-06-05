@@ -55,18 +55,26 @@ export async function GET(
 
     // Fetch full hierarchy
     const chapters = sortChecklistHierarchy(await prisma.chapter.findMany({
+      where: { archivedAt: null },
       orderBy: { number: 'asc' },
       include: {
         sections: {
+          where: { archivedAt: null },
           orderBy: { number: 'asc' },
           include: {
             solutions: {
+              where: { archivedAt: null },
               orderBy: { standardNumber: 'asc' },
               include: {
-                goals: true,
-                phases: true,
+                goals: {
+                  where: { archivedAt: null },
+                },
+                phases: {
+                  where: { archivedAt: null },
+                },
                 figures: {
                   where: {
+                    archivedAt: null,
                     url: {
                       not: null,
                     },
@@ -91,9 +99,11 @@ export async function GET(
 
     // Fetch all phases and goals for the UI matrix
     const allPhases = await prisma.phase.findMany({
+      where: { archivedAt: null },
       orderBy: { name: 'asc' },
     });
     const allGoals = await prisma.goal.findMany({
+      where: { archivedAt: null },
       orderBy: { text: 'asc' },
     });
 

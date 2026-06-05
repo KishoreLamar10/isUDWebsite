@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma';
 export async function GET() {
   try {
     const facilityUses = await prisma.facilityUse.findMany({
+      where: { archivedAt: null },
       orderBy: { name: 'asc' },
       select: { id: true, name: true },
     });

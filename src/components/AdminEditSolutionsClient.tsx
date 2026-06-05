@@ -413,22 +413,22 @@ export default function AdminEditSolutionsClient() {
       />
       <Breadcrumbs items={breadcrumbItems} />
 
-      <div className="flex flex-col gap-4 border border-slate-200 bg-white p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-4 border border-slate-200 bg-white p-4 shadow-sm sm:p-5 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <p className="text-xs font-bold uppercase tracking-widest text-secondary">Admin Dashboard</p>
           <h1 className="mt-1 text-2xl font-bold text-primary">Edit Solutions</h1>
         </div>
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <label className="relative block">
+        <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center lg:w-auto">
+          <label className="relative block flex-1 lg:w-80 lg:flex-none">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Search library"
-              className="h-10 w-full rounded-md border border-slate-200 bg-white pl-9 pr-3 text-sm font-medium text-slate-700 outline-none focus:border-secondary focus:ring-2 focus:ring-secondary/25 sm:w-72"
+              className="h-10 w-full rounded-md border border-slate-200 bg-white pl-9 pr-3 text-sm font-medium text-slate-700 outline-none focus:border-secondary focus:ring-2 focus:ring-secondary/25"
             />
           </label>
-          <label className="inline-flex h-10 items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-3 text-sm font-bold text-slate-700">
+          <label className="inline-flex h-10 shrink-0 items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-3 text-sm font-bold text-slate-700">
             <input
               type="checkbox"
               checked={showArchived}
@@ -453,10 +453,10 @@ export default function AdminEditSolutionsClient() {
           Loading solution library
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-4 xl:grid-cols-[280px_360px_minmax(420px,0.9fr)_minmax(560px,1.1fr)]">
-          <aside className="border border-slate-200 bg-white shadow-sm">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(260px,0.9fr)_minmax(320px,1.1fr)] xl:grid-cols-[280px_360px_minmax(460px,1fr)]">
+          <aside className="min-w-0 border border-slate-200 bg-white shadow-sm">
             <PanelHeader label="Chapters" onAdd={() => editChapter()} />
-            <div className="max-h-[760px] overflow-y-auto divide-y divide-slate-100">
+            <div className="max-h-[420px] overflow-y-auto divide-y divide-slate-100 2xl:max-h-[620px]">
               {filteredChapters.map((chapter) => (
                 <ListRow
                   key={chapter.id}
@@ -477,12 +477,12 @@ export default function AdminEditSolutionsClient() {
             </div>
           </aside>
 
-          <aside className="border border-slate-200 bg-white shadow-sm">
+          <aside className="min-w-0 border border-slate-200 bg-white shadow-sm">
             <PanelHeader label="Sections and Subsections" onAdd={() => editSection()} disabled={!activeChapter} />
             {!activeChapter ? (
               <EmptyState text="Select a chapter to manage sections." />
             ) : (
-              <div className="max-h-[760px] overflow-y-auto divide-y divide-slate-100">
+              <div className="max-h-[420px] overflow-y-auto divide-y divide-slate-100 2xl:max-h-[620px]">
                 {activeChapter.sections.map((section) => (
                   <div key={section.id}>
                     <ListRow
@@ -537,15 +537,15 @@ export default function AdminEditSolutionsClient() {
             )}
           </aside>
 
-          <section className="border border-slate-200 bg-white shadow-sm">
+          <section className="min-w-0 border border-slate-200 bg-white shadow-sm lg:col-span-2 xl:col-span-1">
             <PanelHeader label="Solutions" onAdd={() => editSolution()} disabled={!activeSection} />
             {!activeSection ? (
               <EmptyState text="Select a section to manage solutions." />
             ) : (
-              <div className="max-h-[760px] overflow-y-auto divide-y divide-slate-100">
+              <div className="max-h-[520px] overflow-y-auto divide-y divide-slate-100 2xl:max-h-[620px]">
                   {activeSection.solutions.map((solution) => (
                     <div key={solution.id} className={cn('p-4', isArchived(solution) && 'bg-slate-50 opacity-70')}>
-                      <div className="flex items-start justify-between gap-3">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                         <button type="button" onClick={() => editSolution(solution)} className="min-w-0 flex-1 text-left">
                           <div className="flex flex-wrap items-center gap-2">
                             <span className="font-mono text-xs font-bold text-secondary">{solution.standardNumber}</span>
@@ -595,7 +595,7 @@ export default function AdminEditSolutionsClient() {
             )}
           </section>
 
-          <aside ref={editPanelRef} className="space-y-4 xl:sticky xl:top-24 xl:self-start">
+          <aside ref={editPanelRef} className="min-w-0 space-y-4 lg:col-span-2 xl:col-span-3">
             <EditForm
               target={editTarget}
               chapter={activeChapter}
@@ -676,7 +676,7 @@ function ListRow({
   onMoveDown: () => void;
 }) {
   return (
-    <div className={cn('flex items-center gap-2', compact ? 'rounded-md bg-white px-2 py-2' : 'px-4 py-3', active && 'bg-primary/5', archived && 'opacity-65')}>
+    <div className={cn('flex flex-col gap-2 min-[420px]:flex-row min-[420px]:items-center', compact ? 'rounded-md bg-white px-2 py-2' : 'px-4 py-3', active && 'bg-primary/5', archived && 'opacity-65')}>
       <button type="button" onClick={onSelect} className="min-w-0 flex-1 text-left">
         <div className="truncate text-sm font-bold text-slate-800">{title}</div>
         <div className="truncate text-xs font-medium text-slate-400">{meta}</div>
@@ -701,7 +701,7 @@ function RowActions({
 }) {
   const button = 'inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-primary';
   return (
-    <div className="flex shrink-0 items-center gap-1">
+    <div className="flex shrink-0 items-center justify-end gap-1">
       <button type="button" className={button} onClick={onMoveUp} title="Move up" aria-label="Move up">
         <ArrowUp className="h-4 w-4" />
       </button>
@@ -809,7 +809,7 @@ function EditForm({
 }) {
   if (!target) {
     return (
-      <div className="min-h-[420px] border border-dashed border-slate-300 bg-white p-8 text-center shadow-sm">
+      <div className="min-h-[260px] border border-dashed border-slate-300 bg-white p-8 text-center shadow-sm sm:min-h-[360px]">
         <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-400">
           <Pencil className="h-5 w-5" />
         </div>
@@ -824,23 +824,23 @@ function EditForm({
 
   return (
     <form onSubmit={onSubmit} className="overflow-hidden border border-slate-200 bg-white shadow-sm">
-      <div className="flex items-center justify-between gap-3 border-b border-slate-200 bg-slate-50 px-5 py-4">
+      <div className="flex flex-col gap-3 border-b border-slate-200 bg-slate-50 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
         <div>
           <p className="text-xs font-bold uppercase tracking-widest text-secondary">{item.id ? 'Edit' : 'Create'}</p>
           <h2 className="text-xl font-bold capitalize text-primary">{target.resource}</h2>
         </div>
-        <div className="flex gap-2">
-          <button type="button" onClick={onCancel} className="h-10 rounded-md border border-slate-200 px-4 text-sm font-bold text-slate-600 hover:bg-slate-50">
+        <div className="flex gap-2 sm:justify-end">
+          <button type="button" onClick={onCancel} className="h-10 flex-1 rounded-md border border-slate-200 px-4 text-sm font-bold text-slate-600 hover:bg-slate-50 sm:flex-none">
             Cancel
           </button>
-          <button type="submit" disabled={saving} className="inline-flex h-10 items-center gap-2 rounded-md bg-primary px-4 text-sm font-bold text-white hover:bg-[#001d3d] disabled:bg-slate-300">
+          <button type="submit" disabled={saving} className="inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-bold text-white hover:bg-[#001d3d] disabled:bg-slate-300 sm:flex-none">
             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
             Save
           </button>
         </div>
       </div>
 
-      <div className="space-y-5 p-5">
+      <div className="space-y-5 p-4 sm:p-5">
       {target.resource === 'chapter' && (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <Field label="Number" value={item.number} onChange={(value) => update({ number: value })} />

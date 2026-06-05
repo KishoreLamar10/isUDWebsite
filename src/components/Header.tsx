@@ -16,43 +16,40 @@ export default function Header() {
   const isAdmin = (session?.user as any)?.role === 'ADMIN';
 
   return (
-    <header className="w-full bg-white border-b border-slate-200 sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-20">
-          {/* Logo Section */}
-          <div className="flex items-center space-x-2">
+    <header className="sticky top-0 z-50 w-full border-b border-slate-200 bg-white">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="flex flex-col gap-3 py-3 sm:h-20 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:py-0">
+          <div className="flex items-center justify-center space-x-2 sm:justify-start">
             <div className="flex flex-col">
-              <span className="text-3xl font-bold tracking-tighter text-primary leading-none flex items-center">
+              <span className="flex items-center text-3xl font-bold leading-none tracking-tighter text-primary">
                 isUD
-                <span className="ml-1 text-[#F7941D] text-2xl">›</span>
+                <span className="ml-1 text-2xl text-[#F7941D]">&gt;</span>
               </span>
-              <span className="text-[10px] text-muted uppercase tracking-wider font-medium">
+              <span className="hidden text-[10px] font-medium uppercase tracking-wider text-muted min-[460px]:block">
                 Innovative solutions for Universal Design
               </span>
             </div>
           </div>
 
-          {/* Navigation Section */}
-          <nav className="flex items-center space-x-8">
+          <nav className="grid w-full grid-cols-4 items-start gap-1 sm:w-auto sm:flex sm:items-center sm:gap-0 sm:space-x-8">
             {navItems.map((item) => (
               item.isAccount ? (
-                <div key={item.label} className="relative group py-4">
+                <div key={item.label} className="group relative py-1 sm:py-4">
                   <Link
                     href={session ? '/account/profile' : '/register'}
-                    className="flex flex-col items-center space-y-1 text-slate-600 group-hover:text-primary transition-colors duration-200"
+                    className="flex flex-col items-center space-y-1 text-slate-600 transition-colors duration-200 group-hover:text-primary"
                   >
-                    <item.icon size={22} className="group-hover:scale-110 transition-transform duration-200" />
-                    <span className="text-[11px] font-semibold uppercase tracking-tight">
+                    <item.icon size={22} className="transition-transform duration-200 group-hover:scale-110" />
+                    <span className="text-center text-[10px] font-semibold uppercase leading-tight tracking-tight sm:text-[11px]">
                       {item.label}
                     </span>
                   </Link>
 
-                  {/* Dropdown Menu - Appears on Hover if logged in */}
                   {session && (
-                    <div className="absolute top-full right-0 mt-0 w-48 bg-white border border-slate-100 shadow-xl rounded-md py-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform origin-top-right scale-95 group-hover:scale-100 z-50">
+                    <div className="invisible absolute right-0 top-full z-50 mt-0 w-48 origin-top-right scale-95 rounded-md border border-slate-100 bg-white py-2 opacity-0 shadow-xl transition-all duration-200 group-hover:visible group-hover:scale-100 group-hover:opacity-100">
                       <Link
                         href="/account/profile"
-                        className="flex items-center space-x-3 px-4 py-3 text-sm text-slate-600 hover:bg-slate-50 hover:text-primary transition-colors"
+                        className="flex items-center space-x-3 px-4 py-3 text-sm text-slate-600 transition-colors hover:bg-slate-50 hover:text-primary"
                       >
                         <User size={16} />
                         <span className="font-medium">User Profile</span>
@@ -61,14 +58,14 @@ export default function Header() {
                         <>
                           <Link
                             href="/admin/edit-solutions"
-                            className="flex items-center space-x-3 px-4 py-3 text-sm text-slate-600 hover:bg-slate-50 hover:text-primary transition-colors"
+                            className="flex items-center space-x-3 px-4 py-3 text-sm text-slate-600 transition-colors hover:bg-slate-50 hover:text-primary"
                           >
                             <ShieldCheck size={16} />
                             <span className="font-medium">Admin Dashboard</span>
                           </Link>
                           <Link
                             href="/admin/users"
-                            className="flex items-center space-x-3 px-4 py-3 text-sm text-slate-600 hover:bg-slate-50 hover:text-primary transition-colors"
+                            className="flex items-center space-x-3 px-4 py-3 text-sm text-slate-600 transition-colors hover:bg-slate-50 hover:text-primary"
                           >
                             <Users size={16} />
                             <span className="font-medium">Admin Users</span>
@@ -77,7 +74,7 @@ export default function Header() {
                       )}
                       <button
                         onClick={() => signOut({ callbackUrl: '/register' })}
-                        className="w-full flex items-center space-x-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                        className="flex w-full items-center space-x-3 px-4 py-3 text-sm text-red-600 transition-colors hover:bg-red-50"
                       >
                         <LogOut size={16} />
                         <span className="font-medium">Logout</span>
@@ -89,10 +86,10 @@ export default function Header() {
                 <Link
                   key={item.label}
                   href={item.href}
-                  className="group flex flex-col items-center space-y-1 text-slate-600 hover:text-primary transition-colors duration-200"
+                  className="group flex flex-col items-center space-y-1 py-1 text-slate-600 transition-colors duration-200 hover:text-primary sm:py-0"
                 >
-                  <item.icon size={22} className="group-hover:scale-110 transition-transform duration-200" />
-                  <span className="text-[11px] font-semibold uppercase tracking-tight">
+                  <item.icon size={22} className="transition-transform duration-200 group-hover:scale-110" />
+                  <span className="text-center text-[10px] font-semibold uppercase leading-tight tracking-tight sm:text-[11px]">
                     {item.label}
                   </span>
                 </Link>

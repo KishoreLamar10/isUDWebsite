@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Loader2, UserPlus } from 'lucide-react';
 import Button from './ui/Button';
 
@@ -20,11 +20,22 @@ const roles = [
 ];
 
 export default function AddTeamMemberModal({ isOpen, onClose, onInvite }: ModalProps) {
+  const dialogRef = useRef<HTMLDivElement>(null);
   const [email, setEmail] = useState('');
   const [permission, setPermission] = useState('EDITOR');
   const [role, setRole] = useState(roles[0].value);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const previousActiveElement = document.activeElement as HTMLElement | null;
+    const firstInput = dialogRef.current?.querySelector<HTMLInputElement>('input[type="email"]');
+    firstInput?.focus();
+
+    return () => previousActiveElement?.focus();
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -45,24 +56,59 @@ export default function AddTeamMemberModal({ isOpen, onClose, onInvite }: ModalP
     }
   };
 
+  const handleDialogKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      onClose();
+      return;
+    }
+
+    if (event.key !== 'Tab') return;
+
+    const focusableElements = dialogRef.current?.querySelectorAll<HTMLElement>(
+      'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    );
+    const focusable = Array.from(focusableElements || []);
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+
+    if (!first || !last) return;
+
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/45 animate-in fade-in duration-200">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-[560px] overflow-hidden border border-slate-200 animate-in zoom-in-95 duration-200">
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="add-team-member-title"
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-[560px] overflow-hidden border border-slate-200 animate-in zoom-in-95 duration-200"
+        onKeyDown={handleDialogKeyDown}
+      >
         <div className="px-8 py-8 space-y-7">
-          <h2 className="text-xl font-bold text-slate-900">Add Team Member</h2>
+          <h2 id="add-team-member-title" className="text-xl font-bold text-slate-900">Add Team Member</h2>
 
           <form onSubmit={handleSubmit} className="space-y-8">
             {error && (
-              <div className="p-3 bg-red-50 border border-red-200 rounded-md text-red-600 text-sm italic">
+              <div role="alert" className="p-3 bg-red-50 border border-red-200 rounded-md text-red-600 text-sm italic">
                 {error}
               </div>
             )}
 
             {/* Email Address */}
             <div className="space-y-3">
-              <label className="text-sm font-medium text-slate-900">E-mail Address</label>
+              <label htmlFor="team-member-email" className="text-sm font-medium text-slate-900">E-mail Address</label>
               <div className="relative">
               <input
+                id="team-member-email"
                 type="email"
                 required
                 className="w-full h-11 px-4 pr-12 bg-white border border-slate-300 rounded-md text-base text-slate-700 focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none transition-all"
@@ -70,13 +116,13 @@ export default function AddTeamMemberModal({ isOpen, onClose, onInvite }: ModalP
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
-                <UserPlus className="absolute right-4 top-3 text-slate-900" size={22} />
+                <UserPlus className="absolute right-4 top-3 text-slate-900" size={22} aria-hidden="true" />
               </div>
             </div>
 
             {/* Permission Level */}
-            <div className="space-y-4">
-              <label className="text-sm font-medium text-slate-900">Project Permission Level</label>
+            <fieldset className="space-y-4">
+              <legend className="text-sm font-medium text-slate-900">Project Permission Level</legend>
               <div className="space-y-3">
                 <label className="flex items-center gap-4 cursor-pointer group">
                   <div className="relative flex items-center justify-center w-10 h-6 shrink-0">
@@ -86,9 +132,9 @@ export default function AddTeamMemberModal({ isOpen, onClose, onInvite }: ModalP
                       value="EDITOR"
                       checked={permission === 'EDITOR'}
                       onChange={() => setPermission('EDITOR')}
-                      className="sr-only"
+                      className="peer sr-only"
                     />
-                    <div className={`w-5 h-5 rounded-full transition-all ${permission === 'EDITOR' ? 'bg-secondary' : 'bg-slate-300 group-hover:bg-slate-400'}`} />
+                    <div className={`w-5 h-5 rounded-full transition-all peer-focus-visible:ring-2 peer-focus-visible:ring-secondary peer-focus-visible:ring-offset-2 ${permission === 'EDITOR' ? 'bg-secondary' : 'bg-slate-300 group-hover:bg-slate-400'}`} />
                   </div>
                   <span className="text-base text-slate-900">Team Member - Editor</span>
                 </label>
@@ -101,19 +147,20 @@ export default function AddTeamMemberModal({ isOpen, onClose, onInvite }: ModalP
                       value="VIEWER"
                       checked={permission === 'VIEWER'}
                       onChange={() => setPermission('VIEWER')}
-                      className="sr-only"
+                      className="peer sr-only"
                     />
-                    <div className={`w-5 h-5 rounded-full transition-all ${permission === 'VIEWER' ? 'bg-secondary' : 'bg-slate-300 group-hover:bg-slate-400'}`} />
+                    <div className={`w-5 h-5 rounded-full transition-all peer-focus-visible:ring-2 peer-focus-visible:ring-secondary peer-focus-visible:ring-offset-2 ${permission === 'VIEWER' ? 'bg-secondary' : 'bg-slate-300 group-hover:bg-slate-400'}`} />
                   </div>
                   <span className="text-base text-slate-900">Team Member - Viewer</span>
                 </label>
               </div>
-            </div>
+            </fieldset>
 
             {/* Project Role */}
             <div className="space-y-3">
-              <label className="text-sm font-medium text-slate-900">Project Role</label>
+              <label htmlFor="team-member-role" className="text-sm font-medium text-slate-900">Project Role</label>
               <select
+                id="team-member-role"
                 className="w-full h-11 px-4 bg-slate-100 border border-slate-300 rounded-md text-base text-slate-800 focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none transition-all cursor-pointer"
                 value={role}
                 onChange={(e) => setRole(e.target.value)}
@@ -140,7 +187,7 @@ export default function AddTeamMemberModal({ isOpen, onClose, onInvite }: ModalP
                   disabled={isSubmitting}
                   className="bg-primary hover:bg-[#001d3d] text-white px-12 py-3 rounded-md font-bold min-w-[160px] transition-all active:scale-95"
                 >
-                  {isSubmitting ? <Loader2 className="w-6 h-6 animate-spin mx-auto" /> : 'Add'}
+                  {isSubmitting ? <Loader2 className="w-6 h-6 animate-spin mx-auto" aria-hidden="true" /> : 'Add'}
                 </Button>
               </div>
             </div>

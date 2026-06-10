@@ -331,12 +331,12 @@ export default function ChecklistPage({ params }: { params: Promise<Params> }) {
             onClick={() => window.print()}
             className="flex h-12 items-center gap-2 rounded-md bg-slate-100 px-6 text-sm font-bold text-slate-600 transition-all hover:bg-slate-200 active:scale-95"
           >
-            <Printer className="w-4 h-4" />
+            <Printer className="w-4 h-4" aria-hidden="true" />
             Print
           </button>
 
           {!isReadOnly && (
-            <div className={`flex h-12 items-center gap-2 rounded-md px-5 text-sm font-bold ${
+            <div role="status" aria-live="polite" className={`flex h-12 items-center gap-2 rounded-md px-5 text-sm font-bold ${
               saveError
                 ? 'bg-red-50 text-red-700 border border-red-100'
                 : saving
@@ -346,9 +346,9 @@ export default function ChecklistPage({ params }: { params: Promise<Params> }) {
                     : 'bg-slate-50 text-slate-500 border border-slate-100'
             }`}>
               {saveError ? (
-                <AlertCircle className="h-4 w-4" />
+                <AlertCircle className="h-4 w-4" aria-hidden="true" />
               ) : (
-                <CheckCircle2 className={`h-4 w-4 ${saving ? 'animate-pulse' : ''}`} />
+                <CheckCircle2 className={`h-4 w-4 ${saving ? 'animate-pulse' : ''}`} aria-hidden="true" />
               )}
               {saveError ? 'Save failed' : saving ? 'Saving...' : hasSaved ? 'Saved' : 'Auto-save on'}
             </div>

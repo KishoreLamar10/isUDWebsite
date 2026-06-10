@@ -62,7 +62,7 @@ export default function InvitationBanner() {
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="bg-white/20 p-2 rounded-lg">
-            <Bell size={20} className="text-[#F7941D]" />
+            <Bell size={20} className="text-[#F7941D]" aria-hidden="true" />
           </div>
           <p className="text-sm font-medium">
             You have been invited to join <span className="font-bold text-[#F7941D]">{invitations[0].project.projectName}</span>
@@ -74,12 +74,12 @@ export default function InvitationBanner() {
           <button
             onClick={() => handleAccept(invitations[0].projectId)}
             disabled={!!processingId}
-            className="flex items-center gap-1.5 bg-[#F7941D] hover:bg-[#e68a1b] text-white px-4 py-1.5 rounded-full text-xs font-bold transition-all disabled:opacity-50"
+            className="flex items-center gap-1.5 rounded-full bg-secondary px-4 py-1.5 text-xs font-bold text-white transition-all hover:bg-[#92400e] disabled:opacity-50"
           >
             {processingId === invitations[0].projectId ? (
-              <Loader2 size={14} className="animate-spin" />
+              <Loader2 size={14} className="animate-spin" aria-hidden="true" />
             ) : (
-              <Check size={14} />
+              <Check size={14} aria-hidden="true" />
             )}
             Accept Invitation
           </button>
@@ -89,14 +89,15 @@ export default function InvitationBanner() {
             className="flex items-center gap-1.5 bg-white/10 hover:bg-white/20 text-white px-4 py-1.5 rounded-full text-xs font-bold transition-all"
           >
             View Team
-            <ArrowRight size={14} />
+            <ArrowRight size={14} aria-hidden="true" />
           </button>
           
           <button 
             onClick={() => setInvitations([])} // Temporary hide
             className="p-1.5 hover:bg-white/10 rounded-full transition-colors"
+            aria-label="Dismiss invitation banner"
           >
-            <X size={16} />
+            <X size={16} aria-hidden="true" />
           </button>
         </div>
       </div>

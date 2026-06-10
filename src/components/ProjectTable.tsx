@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { Search, Plus, Info } from 'lucide-react';
 import { useCallback, useMemo, useState, useEffect } from 'react';
-import Button from './ui/Button';
 
 const tableHeaders = ['ID', 'Name', 'Owner', 'Status', 'Score'];
 
@@ -44,6 +43,8 @@ function ScoreCircle({ score, size = 44 }: { score: number; size?: number }) {
 }
 
 const tableColumnClass = 'grid-cols-[120px_minmax(280px,1.45fr)_minmax(220px,1fr)_180px_120px]';
+const primaryLinkClass = 'inline-flex items-center justify-center gap-2 rounded-sm bg-primary px-5 py-3 text-sm font-bold uppercase tracking-widest text-white shadow-sm transition-all duration-200 hover:bg-[#002855] focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2 active:scale-95';
+const secondaryLinkClass = 'inline-flex items-center justify-center gap-2 rounded-sm bg-secondary px-5 py-3 text-sm font-bold uppercase tracking-widest text-white shadow-sm transition-all duration-200 hover:bg-[#92400e] focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2 active:scale-95';
 
 export default function ProjectTable() {
   const { data: session } = useSession();
@@ -117,18 +118,14 @@ export default function ProjectTable() {
       {/* Controls Bar */}
       <div className="flex flex-col sm:flex-row justify-between items-center gap-6">
         <div className="flex flex-wrap items-center gap-4">
-          <Link href={newProjectHref}>
-            <Button variant="primary" className="gap-2 px-5 bg-[#002a54] hover:bg-[#001d3d]">
-              <Plus size={18} />
-              {newProjectLabel}
-            </Button>
+          <Link href={newProjectHref} className={primaryLinkClass}>
+            <Plus size={18} aria-hidden="true" />
+            {newProjectLabel}
           </Link>
           
-          <Link href="/solutions">
-            <Button variant="primary" className="gap-2 px-5 bg-secondary hover:bg-secondary-dark text-primary border-none shadow-sm">
-              <Search size={18} />
-              Browse Solutions
-            </Button>
+          <Link href="/solutions" className={secondaryLinkClass}>
+            <Search size={18} aria-hidden="true" />
+            Browse Solutions
           </Link>
         </div>
         <div className="flex flex-wrap items-center justify-end gap-4">
@@ -140,12 +137,14 @@ export default function ProjectTable() {
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Search projects"
+              aria-label="Search projects"
               className="h-9 w-48 rounded-sm border border-slate-200 bg-white pl-9 pr-3 text-sm font-medium text-primary outline-none transition-all focus:border-secondary focus:ring-2 focus:ring-secondary/30"
             />
           </label>
           <div className="flex items-center gap-3">
-            <label className="text-sm font-bold text-muted uppercase tracking-wider">Sort By</label>
+            <label htmlFor="project-sort" className="text-sm font-bold text-muted uppercase tracking-wider">Sort By</label>
             <select
+              id="project-sort"
               suppressHydrationWarning
               value={sortBy}
               onChange={(event) => setSortBy(event.target.value)}
@@ -157,8 +156,9 @@ export default function ProjectTable() {
             </select>
           </div>
           <div className="flex items-center gap-3">
-            <label className="text-sm font-bold text-muted uppercase tracking-wider">Filter By</label>
+            <label htmlFor="project-filter" className="text-sm font-bold text-muted uppercase tracking-wider">Filter By</label>
             <select
+              id="project-filter"
               suppressHydrationWarning
               value={filterBy}
               onChange={(event) => setFilterBy(event.target.value)}
@@ -201,26 +201,20 @@ export default function ProjectTable() {
             </div>
 
             <div className="flex flex-col sm:flex-row gap-6">
-              <Link href="/solutions">
-                <Button variant="primary" className="gap-3">
-                  <Search size={20} className="opacity-70" />
-                  Browse Solutions
-                </Button>
+              <Link href="/solutions" className={primaryLinkClass}>
+                <Search size={20} className="opacity-70" aria-hidden="true" />
+                Browse Solutions
               </Link>
-              <Link href={newProjectHref}>
-                <Button variant="primary" className="gap-3">
-                  <Plus size={22} className="opacity-70" />
-                  {emptyProjectLabel}
-                </Button>
+              <Link href={newProjectHref} className={primaryLinkClass}>
+                <Plus size={22} className="opacity-70" aria-hidden="true" />
+                {emptyProjectLabel}
               </Link>
             </div>
 
 
-            <Link href="/guide">
-               <Button variant="primary" className="gap-3 bg-[#002a54]">
-                 <Info size={18} className="opacity-70" />
-                 Learn how it works!
-               </Button>
+            <Link href="/guide" className={primaryLinkClass}>
+               <Info size={18} className="opacity-70" aria-hidden="true" />
+               Learn how it works!
             </Link>
 
           </div>

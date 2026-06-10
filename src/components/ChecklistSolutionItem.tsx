@@ -46,10 +46,13 @@ export const ChecklistSolutionItem: React.FC<SolutionProps> = ({
     <div className="border-b border-slate-100 last:border-0">
       <div className="flex items-start gap-4 py-4 px-2 hover:bg-slate-50 transition-colors group">
         <button
+          type="button"
           onClick={() => setExpanded(!expanded)}
           className="mt-1 p-0.5 rounded-full border border-slate-300 text-slate-400 hover:border-primary hover:text-primary transition-colors"
+          aria-label={expanded ? 'Hide solution details' : 'Show solution details'}
+          aria-expanded={expanded}
         >
-          {expanded ? <Minus className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
+          {expanded ? <Minus className="w-3.5 h-3.5" aria-hidden="true" /> : <Plus className="w-3.5 h-3.5" aria-hidden="true" />}
         </button>
 
         <div className="flex-1 text-[15px] text-slate-700 leading-relaxed pt-0.5">
@@ -74,14 +77,18 @@ export const ChecklistSolutionItem: React.FC<SolutionProps> = ({
               aria-label={figuresExpanded ? 'Hide solution figure' : 'Show solution figure'}
               aria-expanded={figuresExpanded}
             >
-              <ImageIcon className="h-4 w-4" />
+              <ImageIcon className="h-4 w-4" aria-hidden="true" />
             </button>
           )}
 
           {/* Status Selector - Single Toggle */}
           <button
+            type="button"
+            role="switch"
             onClick={() => !readOnly && toggleImplemented()}
             disabled={readOnly}
+            aria-checked={status === 'IMPLEMENTED'}
+            aria-label={`${status === 'IMPLEMENTED' ? 'Mark solution not implemented' : 'Mark solution implemented'}: ${solution.text}`}
             className={`relative inline-flex h-8 w-16 items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-secondary focus:ring-offset-2 ${
               status === 'IMPLEMENTED' ? 'bg-primary' : 'bg-slate-300'
             } ${readOnly ? 'cursor-not-allowed opacity-50' : ''}`}
@@ -148,7 +155,7 @@ export const ChecklistSolutionItem: React.FC<SolutionProps> = ({
                         const isMatched = solution.phases.some((ph: any) => ph.name === p.name);
                         return (
                           <div key={p.id} className={`flex items-center gap-1.5 ${isMatched ? 'text-orange-500 font-bold' : 'text-slate-400 opacity-40'}`}>
-                            {isMatched && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+                            {isMatched && <Check className="w-3.5 h-3.5 stroke-[3]" aria-hidden="true" />}
                             {p.name}
                           </div>
                         );

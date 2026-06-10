@@ -90,13 +90,13 @@ export default function LoginForm() {
       <h2 className="text-2xl font-bold text-primary tracking-tight">Login to Existing Account</h2>
 
       {error && (
-        <div className="p-4 bg-red-50 border-l-4 border-red-500 text-red-700 text-sm font-medium rounded-r-md">
+        <div role="alert" className="p-4 bg-red-50 border-l-4 border-red-500 text-red-700 text-sm font-medium rounded-r-md">
           {error}
         </div>
       )}
 
       {success && (
-        <div className="p-4 bg-green-50 border-l-4 border-green-500 text-green-700 text-sm font-medium rounded-r-md">
+        <div role="status" aria-live="polite" className="p-4 bg-green-50 border-l-4 border-green-500 text-green-700 text-sm font-medium rounded-r-md">
           {success}
         </div>
       )}
@@ -107,9 +107,10 @@ export default function LoginForm() {
             Enter your email and we will send a secure link to set a new password.
           </p>
           <div className="space-y-2">
-            <label className="text-sm font-semibold text-muted uppercase tracking-wider block">E-mail Address</label>
+            <label htmlFor="recovery-email" className="text-sm font-semibold text-muted uppercase tracking-wider block">E-mail Address</label>
             <div className="relative">
               <input
+                id="recovery-email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -119,7 +120,7 @@ export default function LoginForm() {
                 disabled={recoveryLoading}
                 suppressHydrationWarning={true}
               />
-              <Mail className="absolute right-3 top-3.5 text-slate-400" size={18} />
+              <Mail className="absolute right-3 top-3.5 text-slate-400" size={18} aria-hidden="true" />
             </div>
           </div>
 
@@ -144,7 +145,7 @@ export default function LoginForm() {
             >
               {recoveryLoading ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
                   Working...
                 </>
               ) : 'Send setup link'}
@@ -155,9 +156,10 @@ export default function LoginForm() {
       <form onSubmit={handleLogin} className="space-y-6">
         {/* Email Field */}
         <div className="space-y-2">
-          <label className="text-sm font-semibold text-muted uppercase tracking-wider block">E-mail Address</label>
+          <label htmlFor="login-email" className="text-sm font-semibold text-muted uppercase tracking-wider block">E-mail Address</label>
           <div className="relative">
             <input
+              id="login-email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -167,15 +169,16 @@ export default function LoginForm() {
               disabled={loading}
               suppressHydrationWarning={true}
             />
-            <Mail className="absolute right-3 top-3.5 text-slate-400" size={18} />
+            <Mail className="absolute right-3 top-3.5 text-slate-400" size={18} aria-hidden="true" />
           </div>
         </div>
 
         {/* Password Field */}
         <div className="space-y-2">
-          <label className="text-sm font-semibold text-muted uppercase tracking-wider block">Password</label>
+          <label htmlFor="login-password" className="text-sm font-semibold text-muted uppercase tracking-wider block">Password</label>
           <div className="relative">
             <input
+              id="login-password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -185,7 +188,7 @@ export default function LoginForm() {
               disabled={loading}
               suppressHydrationWarning={true}
             />
-            <Lock className="absolute right-3 top-3.5 text-slate-400" size={18} />
+            <Lock className="absolute right-3 top-3.5 text-slate-400" size={18} aria-hidden="true" />
           </div>
         </div>
 
@@ -214,7 +217,7 @@ export default function LoginForm() {
           >
             {loading ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
                 Logging in...
               </>
             ) : (

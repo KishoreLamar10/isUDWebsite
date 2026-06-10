@@ -4,7 +4,6 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { calculateProjectScore } from '@/lib/scoring';
-import { getProjectApprovalEmail, sendProjectSubmissionEmail } from '@/lib/projectSubmissionEmail';
 
 async function getEditableProject(projectId: string, userId: string, systemRole?: string) {
   const project = await prisma.project.findUnique({
@@ -87,18 +86,14 @@ export async function POST(
       );
     }
 
-    const submittedTo = getProjectApprovalEmail();
     const token = randomBytes(32).toString('hex');
-    const requestUrl = new URL(req.url);
-    const baseUrl = process.env.NEXTAUTH_URL || requestUrl.origin;
-    const approvalUrl = `${baseUrl}/api/projects/${id}/submit/approve?token=${token}`;
 
     await prisma.$transaction([
       prisma.projectSubmission.create({
         data: {
           projectId: id,
           token,
-          submittedTo,
+          submittedTo: 'Admin dashboard',
         },
       }),
       prisma.project.update({
@@ -106,30 +101,6 @@ export async function POST(
         data: { status: 'IN_REVIEW' },
       }),
     ]);
-
-    try {
-      await sendProjectSubmissionEmail({
-        approvalUrl,
-        projectName: project.projectName,
-        projectNumber: project.projectNumber,
-        submittedTo,
-      });
-    } catch (error) {
-      await prisma.$transaction([
-        prisma.projectSubmission.deleteMany({
-          where: {
-            projectId: id,
-            token,
-            status: 'PENDING',
-          },
-        }),
-        prisma.project.update({
-          where: { id },
-          data: { status: 'ONGOING' },
-        }),
-      ]);
-      throw error;
-    }
 
     return NextResponse.json({ status: 'IN_REVIEW' });
   } catch (error: any) {

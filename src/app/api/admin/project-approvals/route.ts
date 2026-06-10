@@ -1,0 +1,111 @@
+import { NextResponse } from 'next/server';
+import { requireAdminSession } from '@/lib/adminAuth';
+import { prisma } from '@/lib/prisma';
+
+function normalizeSubmission(submission: any) {
+  return {
+    id: submission.id,
+    status: submission.status,
+    submittedTo: submission.submittedTo,
+    createdAt: submission.createdAt,
+    approvedAt: submission.approvedAt,
+    project: {
+      id: submission.project.id,
+      projectNumber: submission.project.projectNumber,
+      projectName: submission.project.projectName,
+      contactName: submission.project.contactName,
+      contactEmail: submission.project.contactEmail,
+      firmName: submission.project.firmName,
+      ownerName: submission.project.ownerName,
+      status: submission.project.status,
+      score: submission.project.score,
+      updatedAt: submission.project.updatedAt,
+      user: {
+        name: `${submission.project.user.firstName} ${submission.project.user.lastName}`.trim(),
+        email: submission.project.user.email,
+      },
+    },
+  };
+}
+
+export async function GET(req: Request) {
+  const { error } = await requireAdminSession();
+  if (error) return error;
+
+  const status = new URL(req.url).searchParams.get('status') === 'approved' ? 'APPROVED' : 'PENDING';
+  const submissions = await prisma.projectSubmission.findMany({
+    where: { status },
+    orderBy: { createdAt: 'desc' },
+    include: {
+      project: {
+        select: {
+          id: true,
+          projectNumber: true,
+          projectName: true,
+          contactName: true,
+          contactEmail: true,
+          firmName: true,
+          ownerName: true,
+          status: true,
+          score: true,
+          updatedAt: true,
+          user: {
+            select: {
+              firstName: true,
+              lastName: true,
+              email: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  return NextResponse.json(submissions.map(normalizeSubmission));
+}
+
+export async function POST(req: Request) {
+  const { error } = await requireAdminSession();
+  if (error) return error;
+
+  try {
+    const { submissionId } = await req.json();
+    if (!submissionId || typeof submissionId !== 'string') {
+      return NextResponse.json({ error: 'Submission ID is required' }, { status: 400 });
+    }
+
+    const submission = await prisma.projectSubmission.findFirst({
+      where: {
+        id: submissionId,
+        status: 'PENDING',
+      },
+      select: {
+        id: true,
+        projectId: true,
+      },
+    });
+
+    if (!submission) {
+      return NextResponse.json({ error: 'Pending submission not found' }, { status: 404 });
+    }
+
+    await prisma.$transaction([
+      prisma.projectSubmission.update({
+        where: { id: submission.id },
+        data: {
+          status: 'APPROVED',
+          approvedAt: new Date(),
+        },
+      }),
+      prisma.project.update({
+        where: { id: submission.projectId },
+        data: { status: 'COMPLETED' },
+      }),
+    ]);
+
+    return NextResponse.json({ success: true });
+  } catch (approvalError: any) {
+    console.error('[ADMIN_PROJECT_APPROVAL_ERROR]', approvalError);
+    return NextResponse.json({ error: approvalError?.message || 'Unable to approve project' }, { status: 500 });
+  }
+}

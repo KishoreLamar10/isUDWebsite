@@ -408,18 +408,29 @@ export default function ProjectProfileForm({
               <div className="space-y-2">
                 {['Select All', ...serviceOptions].map((service) => (
                   <label key={service} className="flex items-center gap-2 cursor-pointer group">
-                    <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${
-                      (service === 'Select All'
+                    {(() => {
+                      const checked = service === 'Select All'
                         ? serviceOptions.every((option) => formData.services.includes(option))
-                        : formData.services.includes(service))
+                        : formData.services.includes(service);
+
+                      return (
+                        <>
+                          <input
+                            type="checkbox"
+                            className="peer sr-only"
+                            checked={checked}
+                            onChange={() => handleCheckboxChange('services', service)}
+                          />
+                          <span className={`w-4 h-4 rounded border flex items-center justify-center transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-secondary peer-focus-visible:ring-offset-2 ${
+                            checked
                         ? 'bg-secondary border-secondary'
                         : 'bg-slate-100 border-slate-300 group-hover:border-slate-400'
-                    }`}>
-                      {(service === 'Select All'
-                        ? serviceOptions.every((option) => formData.services.includes(option))
-                        : formData.services.includes(service)) && <Check size={12} className="text-white" />}
-                    </div>
-                    <input type="checkbox" className="hidden" onChange={() => handleCheckboxChange('services', service)} />
+                          }`}>
+                            {checked && <Check size={12} className="text-white" aria-hidden="true" />}
+                          </span>
+                        </>
+                      );
+                    })()}
                     <span className="text-sm text-slate-700">{service}</span>
                   </label>
                 ))}
@@ -446,10 +457,15 @@ export default function ProjectProfileForm({
                <div className="space-y-2">
                   {category.items.map((item) => (
                     <label key={item} className="flex items-start gap-2 cursor-pointer group">
-                      <div className={`mt-0.5 w-4 h-4 shrink-0 rounded border flex items-center justify-center transition-colors ${formData.facilityUses.includes(item) ? 'bg-secondary border-secondary' : 'bg-slate-100 border-slate-300 group-hover:border-slate-400'}`}>
-                        {formData.facilityUses.includes(item) && <Check size={12} className="text-white" />}
-                      </div>
-                      <input type="checkbox" className="hidden" onChange={() => handleCheckboxChange('facilityUses', item)} />
+                      <input
+                        type="checkbox"
+                        className="peer sr-only"
+                        checked={formData.facilityUses.includes(item)}
+                        onChange={() => handleCheckboxChange('facilityUses', item)}
+                      />
+                      <span className={`mt-0.5 w-4 h-4 shrink-0 rounded border flex items-center justify-center transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-secondary peer-focus-visible:ring-offset-2 ${formData.facilityUses.includes(item) ? 'bg-secondary border-secondary' : 'bg-slate-100 border-slate-300 group-hover:border-slate-400'}`}>
+                        {formData.facilityUses.includes(item) && <Check size={12} className="text-white" aria-hidden="true" />}
+                      </span>
                       <span className="text-xs text-slate-700 leading-tight">{item}</span>
                     </label>
                   ))}

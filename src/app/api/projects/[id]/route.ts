@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { getCachedScoringLibrary } from '@/lib/libraryCache';
 import { calculateProjectScore } from '@/lib/scoring';
 import { sortChecklistHierarchy } from '@/lib/naturalSort';
 
@@ -60,22 +61,8 @@ export async function GET(
     const membership = project.teamMembers[0];
     const userRole = systemRole === 'ADMIN' || project.userId === userId ? 'ADMIN' : (membership?.permission || 'VIEWER');
 
-    // Calculate scores using universal utility
-    const chapters = sortChecklistHierarchy(await prisma.chapter.findMany({
-      where: { archivedAt: null },
-      orderBy: { number: 'asc' },
-      include: {
-        sections: {
-          where: { archivedAt: null },
-          include: {
-            solutions: {
-              where: { archivedAt: null },
-              select: { id: true, points: true, isMandatory: true, standardNumber: true },
-            },
-          },
-        },
-      },
-    }));
+    // Calculate scores using universal utility (cached library)
+    const chapters = sortChecklistHierarchy(await getCachedScoringLibrary());
 
     const scores = calculateProjectScore(
       chapters || [],
@@ -274,6 +261,6 @@ export async function PATCH(
     return NextResponse.json(updatedProject);
   } catch (error: any) {
     console.error('Error updating project:', error);
-    return NextResponse.json({ error: error.message || 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -67,6 +67,6 @@ export async function POST(req: Request) {
     return NextResponse.json(userWithoutSecrets);
   } catch (error: any) {
     console.error("[REGISTRATION_POST_ERROR]", error);
-    return new NextResponse(error.message || "Internal Server Error", { status: 500 });
+    return new NextResponse("Internal server error", { status: 500 });
   }
 }

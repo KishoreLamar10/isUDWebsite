@@ -23,5 +23,6 @@ export const config = {
     '/projects/:id/edit',
     '/projects/:id/checklist',
     '/projects/:id/team',
+    '/admin/:path*',
   ],
 };

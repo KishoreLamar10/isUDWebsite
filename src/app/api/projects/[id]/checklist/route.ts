@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { getCachedLibrary } from '@/lib/libraryCache';
 import { sortChecklistHierarchy } from '@/lib/naturalSort';
 
 export async function GET(
@@ -53,59 +54,16 @@ export async function GET(
     const userRole = systemRole === 'ADMIN' || project.userId === userId ? 'ADMIN' : (membership?.permission || 'VIEWER');
     const userStatus = membership?.status || 'ACTIVE';
 
-    // Fetch full hierarchy
-    const chapters = sortChecklistHierarchy(await prisma.chapter.findMany({
-      where: { archivedAt: null },
-      orderBy: { number: 'asc' },
-      include: {
-        sections: {
-          where: { archivedAt: null },
-          orderBy: { number: 'asc' },
-          include: {
-            solutions: {
-              where: { archivedAt: null },
-              orderBy: { standardNumber: 'asc' },
-              include: {
-                goals: {
-                  where: { archivedAt: null },
-                },
-                phases: {
-                  where: { archivedAt: null },
-                },
-                figures: {
-                  where: {
-                    archivedAt: null,
-                    url: {
-                      not: null,
-                    },
-                  },
-                  orderBy: { label: 'asc' },
-                },
-              },
-            },
-          },
-        },
-      },
-    }));
+    // Fetch full hierarchy (cached), project responses/toggles, and UI matrix data in parallel
+    const [rawChapters, responses, toggles, allPhases, allGoals] = await Promise.all([
+      getCachedLibrary(),
+      prisma.projectResponse.findMany({ where: { projectId: id } }),
+      prisma.sectionToggle.findMany({ where: { projectId: id } }),
+      prisma.phase.findMany({ where: { archivedAt: null }, orderBy: { name: 'asc' } }),
+      prisma.goal.findMany({ where: { archivedAt: null }, orderBy: { text: 'asc' } }),
+    ]);
 
-    // Fetch existing responses and toggles for this project
-    const responses = await prisma.projectResponse.findMany({
-      where: { projectId: id },
-    });
-
-    const toggles = await prisma.sectionToggle.findMany({
-      where: { projectId: id },
-    });
-
-    // Fetch all phases and goals for the UI matrix
-    const allPhases = await prisma.phase.findMany({
-      where: { archivedAt: null },
-      orderBy: { name: 'asc' },
-    });
-    const allGoals = await prisma.goal.findMany({
-      where: { archivedAt: null },
-      orderBy: { text: 'asc' },
-    });
+    const chapters = sortChecklistHierarchy(rawChapters);
 
     return NextResponse.json({
       chapters,

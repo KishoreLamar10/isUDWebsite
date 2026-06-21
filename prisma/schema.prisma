@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model User {
@@ -119,6 +120,9 @@ model Project {
   sectionToggles SectionToggle[]
   teamMembers    TeamMember[]
   submissions    ProjectSubmission[]
+
+  @@index([userId])
+  @@index([status])
 }
 
 model TeamMember {
@@ -136,6 +140,8 @@ model TeamMember {
   user    User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@unique([projectId, email])
+  @@index([userId])
+  @@index([email])
 }
 
 enum TeamPermission {
@@ -284,7 +290,7 @@ model ProjectResponse {
 model ProjectSubmission {
   id          String           @id @default(uuid())
   projectId   String
-  token       String           @unique
+  tokenHash   String           @unique
   status      SubmissionStatus @default(PENDING)
   submittedTo String
   approvedAt  DateTime?

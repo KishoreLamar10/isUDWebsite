@@ -1,8 +1,9 @@
-import { randomBytes } from 'node:crypto';
+import { randomBytes, createHash } from 'node:crypto';
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { getCachedScoringLibrary } from '@/lib/libraryCache';
 import { calculateProjectScore } from '@/lib/scoring';
 
 async function getEditableProject(projectId: string, userId: string, systemRole?: string) {
@@ -55,20 +56,7 @@ export async function POST(
       return NextResponse.json({ status: project.status });
     }
 
-    const chapters = await prisma.chapter.findMany({
-      where: { archivedAt: null },
-      include: {
-        sections: {
-          where: { archivedAt: null },
-          include: {
-            solutions: {
-              where: { archivedAt: null },
-              select: { id: true, points: true, isMandatory: true, standardNumber: true },
-            },
-          },
-        },
-      },
-    });
+    const chapters = await getCachedScoringLibrary();
     const scores = calculateProjectScore(chapters, project.responses, project.sectionToggles);
     const totalAvailable = scores.chapterScores.reduce((sum, chapter) => sum + chapter.total, 0);
     const scorePercentage = totalAvailable > 0
@@ -87,12 +75,13 @@ export async function POST(
     }
 
     const token = randomBytes(32).toString('hex');
+    const tokenHash = createHash('sha256').update(token).digest('hex');
 
     await prisma.$transaction([
       prisma.projectSubmission.create({
         data: {
           projectId: id,
-          token,
+          tokenHash,
           submittedTo: 'Admin dashboard',
         },
       }),
@@ -106,7 +95,7 @@ export async function POST(
   } catch (error: any) {
     console.error('Error submitting project:', error);
     return NextResponse.json(
-      { error: error.message || 'Internal server error' },
+      { error: 'Internal server error' },
       { status: 500 }
     );
   }

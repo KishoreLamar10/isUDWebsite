@@ -14,8 +14,8 @@ interface SolutionProps {
   readOnly?: boolean;
 }
 
-function isDataImage(src: string) {
-  return src.startsWith('data:image/');
+function isDataUri(src: string) {
+  return src.startsWith('data:');
 }
 
 export const ChecklistSolutionItem: React.FC<SolutionProps> = ({
@@ -110,15 +110,7 @@ export const ChecklistSolutionItem: React.FC<SolutionProps> = ({
           <div className="space-y-5">
             {figures.map((figure: any) => (
               <figure key={figure.id} className="rounded-md border border-slate-200 bg-slate-50 p-4 shadow-sm">
-                {isDataImage(figure.url) ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={figure.url}
-                    alt={figure.altTag || figure.caption || figure.number || 'Solution figure'}
-                    className="mx-auto max-h-[520px] w-auto max-w-full rounded-sm object-contain"
-                    loading="lazy"
-                  />
-                ) : (
+                {isDataUri(figure.url) ? null : (
                   <Image
                     src={figure.url}
                     alt={figure.altTag || figure.caption || figure.number || 'Solution figure'}

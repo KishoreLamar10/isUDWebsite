@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { getCachedScoringLibrary } from '@/lib/libraryCache';
 import { calculateProjectScore } from '@/lib/scoring';
 import { sortChecklistHierarchy } from '@/lib/naturalSort';
 
@@ -160,20 +161,7 @@ export async function GET() {
       },
     });
 
-    const chapters = sortChecklistHierarchy(await prisma.chapter.findMany({
-      where: { archivedAt: null },
-      include: {
-        sections: {
-          where: { archivedAt: null },
-          include: {
-            solutions: {
-              where: { archivedAt: null },
-              select: { id: true, points: true, isMandatory: true, standardNumber: true },
-            },
-          },
-        },
-      },
-    }));
+    const chapters = sortChecklistHierarchy(await getCachedScoringLibrary());
 
     const projectsWithScores = projects.map((project) => {
       const scores = calculateProjectScore(chapters, project.responses, project.sectionToggles);

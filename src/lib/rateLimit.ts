@@ -11,7 +11,7 @@ export function hashRateLimitKey(value: string) {
 }
 
 export function getRequestIp(req: Request) {
-  const forwarded = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim();
+  const forwarded = req.headers.get('x-forwarded-for')?.split(',').at(-1)?.trim();
   return forwarded || req.headers.get('x-real-ip') || 'unknown';
 }
 

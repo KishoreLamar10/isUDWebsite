@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { ResponseStatus } from '@prisma/client';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { getCachedScoringLibrary } from '@/lib/libraryCache';
 import { calculateProjectScore } from '@/lib/scoring';
 
 const validResponseStatuses = new Set(Object.values(ResponseStatus));
@@ -167,29 +168,12 @@ export async function POST(
         : []),
     ]);
 
-    // 3. Recalculate Score
-    const chapters = await prisma.chapter.findMany({
-      where: { archivedAt: null },
-      include: {
-        sections: {
-          where: { archivedAt: null },
-          include: {
-            solutions: {
-              where: { archivedAt: null },
-              select: { id: true, points: true, isMandatory: true, standardNumber: true },
-            },
-          },
-        },
-      },
-    });
-
-    const allResponses = await prisma.projectResponse.findMany({
-      where: { projectId: id },
-    });
-    
-    const allToggles = await prisma.sectionToggle.findMany({
-      where: { projectId: id },
-    });
+    // 3. Recalculate Score — library is cached; responses and toggles are fetched in parallel
+    const [chapters, allResponses, allToggles] = await Promise.all([
+      getCachedScoringLibrary(),
+      prisma.projectResponse.findMany({ where: { projectId: id } }),
+      prisma.sectionToggle.findMany({ where: { projectId: id } }),
+    ]);
 
     const { totalScore } = calculateProjectScore(chapters, allResponses, allToggles);
 

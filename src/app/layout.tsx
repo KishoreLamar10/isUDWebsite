@@ -23,6 +23,8 @@ export default async function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.className} antialiased`} suppressHydrationWarning>
         <Providers session={session}>{children}</Providers>
+        {/* Hidden container populated by ChecklistPrintModal before window.print() */}
+        <div id="checklist-print-root" aria-hidden="true" />
       </body>
     </html>
   );

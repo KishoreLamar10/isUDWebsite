@@ -331,9 +331,12 @@ export default function UserGuidePage() {
     <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
       <Breadcrumbs items={breadcrumbItems} />
       
+      <div className="bg-white border border-slate-200 rounded-sm px-6 py-4 flex items-center shadow-sm">
+        <h1 className="text-xl font-bold text-primary tracking-tight">User Guide</h1>
+      </div>
+
       <div className="bg-white border border-slate-200 rounded-sm shadow-sm overflow-hidden p-6 sm:p-10 space-y-8">
         <div className="space-y-4">
-          <h1 className="text-2xl font-bold text-slate-800">User Guide</h1>
           <p className="text-slate-600 leading-relaxed text-[15px] max-w-4xl">
             This guide explains how the isUD Wishlist and isUD Certification scoring system works. 
             The scoring and credits may sound complicated, but the good news is that website does 

@@ -70,6 +70,10 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized: Read-only access or missing permissions' }, { status: 403 });
     }
 
+    if (project.status !== 'ONGOING') {
+      return NextResponse.json({ error: 'Project is not editable in its current status' }, { status: 409 });
+    }
+
     const responseMap = new Map<string, ResponseStatus>();
     for (const item of rawResponseItems) {
       if (

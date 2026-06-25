@@ -177,13 +177,13 @@ export function calculateProjectScore(
         sectionCredits = Math.max(1, Math.floor(section.totalCredits / 2));
         thresholdReached = section.minPoints1;
       } else {
-        const hasThresholds = section.minPoints1 > 0 || section.minPoints2 > 0;
+        const hasThresholds = section.minPoints1 > 0 || section.minPoints2 > 0 || section.minPoints3 > 0;
         if (!hasThresholds) {
           const rawScore = section.solutions.reduce((sum, sol) => {
             return sum + (responseMap.get(sol.id) === 'IMPLEMENTED' ? sol.points : 0);
           }, 0);
           sectionCredits = Math.min(rawScore, section.totalCredits);
-          thresholdReached = Math.round(sectionCredits); // Approximation for bonus logic
+          thresholdReached = 0;
         }
       }
 

@@ -28,3 +28,24 @@ body {
     outline-offset: 3px;
   }
 }
+
+@media print {
+  /* Hide all body content, then selectively show the print root */
+  body * { visibility: hidden !important; }
+
+  #checklist-print-root {
+    visibility: visible !important;
+    display: block !important;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    padding: 24px;
+    font-family: system-ui, sans-serif;
+    color: #1e293b;
+  }
+
+  #checklist-print-root * { visibility: visible !important; }
+
+  .print-page-break { page-break-before: always; }
+}

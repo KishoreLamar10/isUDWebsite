@@ -6,6 +6,7 @@ import { ChecklistSidebar } from '@/components/ChecklistSidebar';
 import { ChecklistSectionList } from '@/components/ChecklistSectionList';
 import { ResponseStatus } from '@prisma/client';
 import { Printer, ChevronRight, CheckCircle2, AlertCircle } from 'lucide-react';
+import ChecklistPrintModal from '@/components/ChecklistPrintModal';
 import { calculateProjectScore } from '@/lib/scoring';
 import { PreliminaryChecklistInfo } from '@/components/PreliminaryChecklistInfo';
 
@@ -40,6 +41,7 @@ export default function ChecklistPage({ params }: { params: Promise<Params> }) {
   const [userRole, setUserRole] = useState<string>('VIEWER');
   const [userStatus, setUserStatus] = useState<string>('PENDING');
   const [errorMessage, setErrorMessage] = useState<string>('');
+  const [printModalOpen, setPrintModalOpen] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
@@ -283,17 +285,17 @@ export default function ChecklistPage({ params }: { params: Promise<Params> }) {
               <p className="text-[11px] font-bold uppercase tracking-widest text-slate-500">Credits</p>
               <div className="flex items-center gap-4 text-center">
                 <div className="min-w-12">
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Earned</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-600">Earned</p>
                   <p className="text-xl font-extrabold leading-6 text-primary">{checklistScore.totalScore}</p>
                 </div>
                 <div className="h-9 w-px bg-slate-200" />
                 <div className="min-w-14">
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Available</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-600">Available</p>
                   <p className="text-xl font-extrabold leading-6 text-primary">{totalAvailable}</p>
                 </div>
                 <div className="h-9 w-px bg-slate-200" />
                 <div className="min-w-12">
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Bonus</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-600">Bonus</p>
                   <p className="text-xl font-extrabold leading-6 text-primary">{checklistScore.totalBonus}</p>
                 </div>
               </div>
@@ -327,8 +329,8 @@ export default function ChecklistPage({ params }: { params: Promise<Params> }) {
             bonus={checklistScore.totalBonus}
           />
 
-          <button 
-            onClick={() => window.print()}
+          <button
+            onClick={() => setPrintModalOpen(true)}
             className="flex h-12 items-center gap-2 rounded-md bg-slate-100 px-6 text-sm font-bold text-slate-600 transition-all hover:bg-slate-200 active:scale-95"
           >
             <Printer className="w-4 h-4" aria-hidden="true" />
@@ -358,17 +360,17 @@ export default function ChecklistPage({ params }: { params: Promise<Params> }) {
 
       {/* Main Content Area */}
       <div className="flex flex-1 overflow-hidden bg-slate-50">
-          <ChecklistSidebar 
-          chapters={chapters} 
-          activeChapterId={activeChapterId} 
+          <ChecklistSidebar
+          chapters={chapters}
+          activeChapterId={activeChapterId}
           onChapterSelect={(chapterId) => {
             if (confirmNavigation()) setActiveChapterId(chapterId);
-          }} 
+          }}
         />
 
         <div className="flex-1 overflow-y-auto relative bg-[#f8fafc]">
           {activeChapter && (
-            <ChecklistSectionList 
+            <ChecklistSectionList
               chapter={activeChapter}
               responses={responses}
               toggles={toggles}
@@ -381,6 +383,15 @@ export default function ChecklistPage({ params }: { params: Promise<Params> }) {
           )}
         </div>
       </div>
+
+      {printModalOpen && (
+        <ChecklistPrintModal
+          chapters={chapters}
+          responses={responses}
+          toggles={toggles}
+          onClose={() => setPrintModalOpen(false)}
+        />
+      )}
     </div>
   );
 }

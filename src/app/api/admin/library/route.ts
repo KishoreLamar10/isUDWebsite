@@ -373,16 +373,29 @@ async function swapField<T extends { id: string }>(
     return { moved: false };
   }
 
-  const current = siblings[index] as T & Record<typeof field, string>;
-  const target = siblings[targetIndex] as T & Record<typeof field, string>;
-  const temp = `__moving_${Date.now()}_${current.id}`;
+  const current = siblings[index] as T & Record<typeof field, string | number>;
+  const target = siblings[targetIndex] as T & Record<typeof field, string | number>;
 
-  const model = prisma[resource] as any;
-  await prisma.$transaction([
-    model.update({ where: { id: current.id }, data: { [field]: temp } }),
-    model.update({ where: { id: target.id }, data: { [field]: current[field] } }),
-    model.update({ where: { id: current.id }, data: { [field]: target[field] } }),
-  ] as Prisma.PrismaPromise<any>[]);
+  // Single atomic CASE UPDATE avoids intermediate unique-constraint violations
+  // that a 3-step temp-value swap would cause on non-deferrable unique indexes.
+  const tableMap = {
+    chapter: '"Chapter"',
+    section: '"Section"',
+    subSection: '"SubSection"',
+    solution: '"Solution"',
+  } as const;
+  const columnMap = {
+    number: '"number"',
+    standardNumber: '"standardNumber"',
+  } as const;
+
+  await prisma.$executeRawUnsafe(
+    `UPDATE ${tableMap[resource]} SET ${columnMap[field]} = CASE id WHEN $1 THEN $2 WHEN $3 THEN $4 END WHERE id IN ($1, $3)`,
+    current.id,
+    target[field],
+    target.id,
+    current[field]
+  );
 
   return { moved: true };
 }

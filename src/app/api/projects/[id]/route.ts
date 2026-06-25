@@ -170,6 +170,10 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized: missing edit permissions' }, { status: 403 });
     }
 
+    if (project.status !== 'ONGOING') {
+      return NextResponse.json({ error: 'Project is not editable in its current status' }, { status: 409 });
+    }
+
     const {
       projectName,
       contactName,

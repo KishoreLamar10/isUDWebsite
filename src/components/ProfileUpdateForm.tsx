@@ -99,7 +99,7 @@ export default function ProfileUpdateForm() {
       const response = await fetch("/api/user/profile", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({ ...formData, currentPassword: verificationPassword }),
       });
 
       if (!response.ok) {
@@ -135,8 +135,8 @@ export default function ProfileUpdateForm() {
     return (
       <div className="w-full">
         {/* Header Bar */}
-        <div className="bg-[#f8f9fa] border-y border-slate-200 py-3 px-8 mb-8">
-          <h1 className="text-xl font-bold text-slate-800">User Profile</h1>
+        <div className="bg-white border border-slate-200 rounded-sm px-6 py-4 flex items-center shadow-sm mb-8 mx-8">
+          <h1 className="text-xl font-bold text-primary tracking-tight">User Profile</h1>
         </div>
 
         <div className="max-w-4xl mx-auto px-8 mt-12 mb-20 text-center">

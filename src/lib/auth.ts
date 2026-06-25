@@ -59,8 +59,14 @@ export const authOptions: NextAuthOptions = {
     },
     async session({ session, token }) {
       if (session.user) {
-        (session.user as any).role = token.role;
         (session.user as any).id = token.id;
+        // Re-fetch role from DB on every session check so demoted admins
+        // lose access immediately without waiting for JWT expiry.
+        const freshUser = await prisma.user.findUnique({
+          where: { id: token.id as string },
+          select: { systemRole: true },
+        });
+        (session.user as any).role = freshUser?.systemRole ?? token.role;
       }
       return session;
     },

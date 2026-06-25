@@ -50,19 +50,23 @@ export default function ProjectTable() {
   const { data: session } = useSession();
   const [projects, setProjects] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState('date');
   const [filterBy, setFilterBy] = useState('ALL');
   const [query, setQuery] = useState('');
 
   const fetchProjects = useCallback(async () => {
     try {
+      setFetchError(null);
       const response = await fetch('/api/projects');
-      if (response.ok) {
-        const data = await response.json();
-        setProjects(data);
+      if (!response.ok) {
+        throw new Error(`Failed to load projects (${response.status})`);
       }
-    } catch (error) {
+      const data = await response.json();
+      setProjects(data);
+    } catch (error: any) {
       console.error('Error fetching projects:', error);
+      setFetchError(error.message || 'Failed to load projects. Please refresh the page.');
     } finally {
       setIsLoading(false);
     }
@@ -188,6 +192,16 @@ export default function ProjectTable() {
           <div className="py-24 flex flex-col items-center justify-center space-y-4">
             <div className="w-10 h-10 border-4 border-secondary border-t-transparent rounded-full animate-spin"></div>
             <p className="text-sm font-medium text-slate-500 uppercase tracking-widest">Loading Projects...</p>
+          </div>
+        ) : fetchError ? (
+          <div className="py-24 flex flex-col items-center justify-center space-y-4 text-center px-6">
+            <p className="text-base font-semibold text-red-600">{fetchError}</p>
+            <button
+              onClick={fetchProjects}
+              className="text-sm font-medium text-primary underline underline-offset-2 hover:text-secondary"
+            >
+              Try again
+            </button>
           </div>
         ) : isEmpty ? (
           <div className="py-24 flex flex-col items-center text-center space-y-12">

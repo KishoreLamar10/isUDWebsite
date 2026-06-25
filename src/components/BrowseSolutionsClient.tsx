@@ -92,7 +92,7 @@ export default function BrowseSolutionsClient({ chapters }: BrowseSolutionsClien
       <Breadcrumbs items={breadcrumbItems} />
 
       <div className="bg-white border border-slate-200 shadow-sm overflow-hidden rounded-sm">
-        <div className="flex flex-col gap-4 px-6 py-5 bg-slate-50 border-b border-slate-200 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex flex-col gap-4 px-6 py-5 bg-white border-b border-slate-200 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <h1 className="text-2xl font-bold text-primary tracking-tight">Browse Solutions</h1>
             <p className="mt-1 text-xs font-bold uppercase tracking-widest text-slate-400">

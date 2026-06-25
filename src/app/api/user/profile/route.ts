@@ -23,6 +23,7 @@ export async function PATCH(req: Request) {
       role,
       reason,
       password,
+      currentPassword,
       securityQuestion,
       securityAnswer,
     } = body;
@@ -49,8 +50,15 @@ export async function PATCH(req: Request) {
       securityQuestion,
     };
 
-    // If email is changing, check for uniqueness
+    // If email is changing, require current password and check uniqueness
     if (emailAddress && emailAddress.toLowerCase() !== user.email) {
+      if (!currentPassword) {
+        return new NextResponse("Current password is required to change email", { status: 400 });
+      }
+      const passwordValid = await bcrypt.compare(currentPassword, user.hashedPassword);
+      if (!passwordValid) {
+        return new NextResponse("Current password is incorrect", { status: 403 });
+      }
       const existingUser = await prisma.user.findUnique({
         where: { email: emailAddress.toLowerCase() },
       });

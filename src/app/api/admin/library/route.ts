@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { Prisma } from '@prisma/client';
 import { requireAdminSession } from '@/lib/adminAuth';
 import { compareNumericText, sortChecklistHierarchy } from '@/lib/naturalSort';
 import { prisma } from '@/lib/prisma';

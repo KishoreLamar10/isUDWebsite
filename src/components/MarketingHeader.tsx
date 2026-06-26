@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function MarketingHeader() {
   const navItems = [
@@ -18,14 +19,15 @@ export default function MarketingHeader() {
         <div className="flex justify-between items-center h-24">
           {/* Logo Section */}
           <div className="flex items-center">
-            <Link href="/" className="flex flex-col">
-              <span className="text-4xl font-bold tracking-tighter text-primary leading-none flex items-center">
-                isUD
-                <span className="ml-1 text-secondary text-3xl">›</span>
-              </span>
-              <span className="text-[11px] text-muted uppercase tracking-widest font-medium mt-1">
-                Innovative solutions for Universal Design
-              </span>
+            <Link href="/">
+              <Image
+                src="/logo.png"
+                alt="isUD - Innovative solutions for Universal Design"
+                width={283}
+                height={118}
+                className="h-14 w-auto"
+                priority
+              />
             </Link>
           </div>
 

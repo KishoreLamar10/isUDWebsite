@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { useSession, signOut } from 'next-auth/react';
 import { useState } from 'react';
 import { FolderKanban, BookOpen, UserCircle, Home, LogOut, User, ShieldCheck, Users, ClipboardCheck } from 'lucide-react';
@@ -22,16 +23,17 @@ export default function Header() {
     <header className="sticky top-0 z-50 w-full border-b border-slate-200 bg-white">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col gap-3 py-3 sm:h-20 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:py-0">
-          <div className="flex items-center justify-center space-x-2 sm:justify-start">
-            <div className="flex flex-col">
-              <span className="flex items-center text-3xl font-bold leading-none tracking-tighter text-primary">
-                isUD
-                <span className="ml-1 text-2xl text-[#F7941D]">&gt;</span>
-              </span>
-              <span className="hidden text-[10px] font-medium uppercase tracking-wider text-muted min-[460px]:block">
-                Innovative solutions for Universal Design
-              </span>
-            </div>
+          <div className="flex items-center justify-center sm:justify-start">
+            <Link href="/">
+              <Image
+                src="/logo.png"
+                alt="isUD - Innovative solutions for Universal Design"
+                width={283}
+                height={118}
+                className="h-10 w-auto"
+                priority
+              />
+            </Link>
           </div>
 
           <nav className="grid w-full grid-cols-4 items-start gap-1 sm:w-auto sm:flex sm:items-center sm:gap-0 sm:space-x-8">

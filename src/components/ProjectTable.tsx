@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
-import { Search, Plus, Info } from 'lucide-react';
+import { Search, Plus, Info, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useCallback, useMemo, useState, useEffect } from 'react';
 
 const tableHeaders = ['ID', 'Name', 'Owner', 'Status', 'Score'];
@@ -54,6 +54,8 @@ export default function ProjectTable() {
   const [sortBy, setSortBy] = useState('date');
   const [filterBy, setFilterBy] = useState('ALL');
   const [query, setQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const PROJECTS_PER_PAGE = 25;
 
   const fetchProjects = useCallback(async () => {
     try {
@@ -81,6 +83,10 @@ export default function ProjectTable() {
     return () => window.removeEventListener('team-invitation-accepted', fetchProjects);
   }, [fetchProjects]);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [query, filterBy, sortBy]);
+
   const isEmpty = projects.length === 0;
   const visibleProjects = useMemo(() => {
     const search = query.trim().toLowerCase();
@@ -106,6 +112,50 @@ export default function ProjectTable() {
         return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
       });
   }, [projects, filterBy, query, sortBy]);
+
+  const totalPages = Math.ceil(visibleProjects.length / PROJECTS_PER_PAGE);
+  const paginatedProjects = useMemo(() => {
+    const startIndex = (currentPage - 1) * PROJECTS_PER_PAGE;
+    return visibleProjects.slice(startIndex, startIndex + PROJECTS_PER_PAGE);
+  }, [visibleProjects, currentPage]);
+
+  const getPageNumbers = () => {
+    const pages: (number | string)[] = [];
+    const maxVisible = 5;
+    
+    if (totalPages <= maxVisible) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      pages.push(1);
+      
+      let start = Math.max(2, currentPage - 1);
+      let end = Math.min(totalPages - 1, currentPage + 1);
+      
+      if (currentPage <= 2) {
+        end = 4;
+      } else if (currentPage >= totalPages - 1) {
+        start = totalPages - 3;
+      }
+      
+      if (start > 2) {
+        pages.push('...');
+      }
+      
+      for (let i = start; i <= end; i++) {
+        pages.push(i);
+      }
+      
+      if (end < totalPages - 1) {
+        pages.push('...');
+      }
+      
+      pages.push(totalPages);
+    }
+    
+    return pages;
+  };
 
   const newProjectHref = session ? '/projects/new' : '/register?callbackUrl=/projects/new';
   const newProjectLabel = session ? 'Add Project' : 'Create Account to Start Project';
@@ -238,43 +288,105 @@ export default function ProjectTable() {
             <p className="text-sm text-slate-500">Adjust the search, sort, or status filter.</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <div className="min-w-[900px] divide-y divide-slate-100">
-              {visibleProjects.map((project) => (
-                <div
-                  key={project.id}
-                  className={`grid ${tableColumnClass} min-h-[72px] items-center hover:bg-slate-50/50 transition-colors group`}
-                >
-                    <div className="px-6 py-3 text-xs font-mono text-slate-400 text-center">
-                      #{project.projectNumber ?? project.id.slice(0, 8)}
-                    </div>
-                    <div className="px-6 py-3 text-sm font-bold text-center">
-                      <Link href={`/projects/${project.id}`} className="text-slate-800 hover:text-secondary transition-colors underline-offset-2 hover:underline">
-                        {project.projectName}
-                      </Link>
-                    </div>
-                    <div className="px-6 py-3 text-sm text-slate-600 text-center">
-                      {project.ownerName || 'N/A'}
-                    </div>
-                    <div className="px-6 py-3 text-center">
-                      <span className={`inline-flex px-3 py-1 rounded-full text-[10px] font-bold tracking-widest uppercase ${
-                        project.status === 'COMPLETED' ? 'bg-green-100 text-green-700' :
-                        project.status === 'IN_REVIEW' ? 'bg-slate-200 text-slate-700' :
-                        project.status === 'ONGOING' ? 'bg-blue-100 text-blue-700' :
-                        'bg-slate-100 text-slate-600'
-                      }`}>
-                        {projectStatusLabels[project.status] || project.status.replace('_', ' ')}
-                      </span>
-                    </div>
-                    <div className="px-6 py-3 text-center">
-                      <div className="mx-auto flex h-11 w-11 items-center justify-center">
-                        <ScoreCircle score={project.scorePercentage ?? ((project.totalEarned || project.score || 0) + (project.bonus || 0))} />
+          <>
+            <div className="overflow-x-auto">
+              <div className="min-w-[900px] divide-y divide-slate-100">
+                {paginatedProjects.map((project) => (
+                  <div
+                    key={project.id}
+                    className={`grid ${tableColumnClass} min-h-[72px] items-center hover:bg-slate-50/50 transition-colors group`}
+                  >
+                      <div className="px-6 py-3 text-xs font-mono text-slate-400 text-center">
+                        #{project.projectNumber ?? project.id.slice(0, 8)}
                       </div>
-                    </div>
-                </div>
-              ))}
+                      <div className="px-6 py-3 text-sm font-bold text-center">
+                        <Link href={`/projects/${project.id}`} className="text-slate-800 hover:text-secondary transition-colors underline-offset-2 hover:underline">
+                          {project.projectName}
+                        </Link>
+                      </div>
+                      <div className="px-6 py-3 text-sm text-slate-600 text-center">
+                        {project.ownerName || 'N/A'}
+                      </div>
+                      <div className="px-6 py-3 text-center">
+                        <span className={`inline-flex px-3 py-1 rounded-full text-[10px] font-bold tracking-widest uppercase ${
+                          project.status === 'COMPLETED' ? 'bg-green-100 text-green-700' :
+                          project.status === 'IN_REVIEW' ? 'bg-slate-200 text-slate-700' :
+                          project.status === 'ONGOING' ? 'bg-blue-100 text-blue-700' :
+                          'bg-slate-100 text-slate-600'
+                        }`}>
+                          {projectStatusLabels[project.status] || project.status.replace('_', ' ')}
+                        </span>
+                      </div>
+                      <div className="px-6 py-3 text-center">
+                        <div className="mx-auto flex h-11 w-11 items-center justify-center">
+                          <ScoreCircle score={project.scorePercentage ?? ((project.totalEarned || project.score || 0) + (project.bonus || 0))} />
+                        </div>
+                      </div>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="border-t border-slate-100 bg-slate-50/30 px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="text-xs font-bold text-slate-500 uppercase tracking-widest">
+                  Showing {Math.min((currentPage - 1) * PROJECTS_PER_PAGE + 1, visibleProjects.length)} to {Math.min(currentPage * PROJECTS_PER_PAGE, visibleProjects.length)} of {visibleProjects.length} projects
+                </div>
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                    disabled={currentPage === 1}
+                    aria-label="Previous Page"
+                    className="inline-flex items-center justify-center rounded-sm border border-slate-200 bg-white p-2 text-primary shadow-sm transition-all hover:bg-slate-50 disabled:opacity-55 disabled:pointer-events-none active:scale-95 outline-none focus-visible:ring-2 focus-visible:ring-secondary"
+                  >
+                    <ChevronLeft size={16} aria-hidden="true" />
+                  </button>
+
+                  {/* Page Numbers */}
+                  <div className="flex items-center space-x-1">
+                    {getPageNumbers().map((page, idx) => {
+                      if (page === '...') {
+                        return (
+                          <span
+                            key={`dots-${idx}`}
+                            className="inline-flex h-8 w-8 items-center justify-center text-xs font-bold text-slate-400"
+                          >
+                            ...
+                          </span>
+                        );
+                      }
+
+                      const isCurrent = page === currentPage;
+                      return (
+                        <button
+                          key={page}
+                          onClick={() => setCurrentPage(page as number)}
+                          aria-current={isCurrent ? 'page' : undefined}
+                          className={`inline-flex h-8 w-8 items-center justify-center rounded-sm text-xs font-extrabold transition-all outline-none focus-visible:ring-2 focus-visible:ring-secondary ${
+                            isCurrent
+                              ? 'bg-secondary text-white shadow-sm'
+                              : 'border border-slate-200 bg-white text-primary hover:bg-slate-50 active:scale-95'
+                          }`}
+                        >
+                          {page}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <button
+                    onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                    disabled={currentPage === totalPages}
+                    aria-label="Next Page"
+                    className="inline-flex items-center justify-center rounded-sm border border-slate-200 bg-white p-2 text-primary shadow-sm transition-all hover:bg-slate-50 disabled:opacity-55 disabled:pointer-events-none active:scale-95 outline-none focus-visible:ring-2 focus-visible:ring-secondary"
+                  >
+                    <ChevronRight size={16} aria-hidden="true" />
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

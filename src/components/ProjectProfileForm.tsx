@@ -258,15 +258,11 @@ export default function ProjectProfileForm({
   return (
     <form onSubmit={handleSave} className="space-y-12 pb-20">
       
-      {/* Page Title */}
-      <div className="bg-slate-50 border-y border-slate-200 py-3 px-6 -mx-4 sm:-mx-6 lg:-mx-8 flex justify-between items-center">
-        <h2 className="text-lg font-bold text-slate-800">{mode === 'edit' ? 'Edit Project Profile' : 'Project Profile'}</h2>
-        {error && (
-          <div className="bg-red-50 text-red-600 px-4 py-1 rounded text-sm font-medium border border-red-100 italic tracking-tight uppercase">
-            {error}
-          </div>
-        )}
-      </div>
+      {error && (
+        <div role="alert" className="bg-red-50 text-red-600 px-6 py-4 rounded border border-red-100 text-sm font-bold uppercase tracking-wide">
+          {error}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
         

@@ -163,7 +163,7 @@ export const ChecklistSectionList: React.FC<SectionListProps> = ({
                   {!isSectionEnabled ? (
                     <span className="text-[12px] font-bold text-slate-400 uppercase tracking-widest">Section excluded from available credits</span>
                   ) : (section.minPoints1 > 0 || section.minPoints2 > 0) ? (
-                    <span className="text-[12px] font-medium text-slate-700">
+                    <span className="text-[12px] font-semibold text-slate-900">
                       {section.minPoints2 > 0 && `${section.totalCredits} Credits: Implement ${section.minPoints2} of ${totalSolutions}`}
                       {section.minPoints2 > 0 && section.minPoints1 > 0 && ' | '}
                       {section.minPoints1 > 0 && `${Math.max(1, Math.floor(section.totalCredits / 2))} Credit: Implement ${section.minPoints1} of ${totalSolutions}`}

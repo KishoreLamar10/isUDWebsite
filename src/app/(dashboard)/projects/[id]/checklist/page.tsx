@@ -282,20 +282,20 @@ export default function ChecklistPage({ params }: { params: Promise<Params> }) {
         <div className="flex items-center gap-3">
           <div className="hidden items-stretch overflow-hidden rounded-md border border-slate-200 bg-slate-50/80 shadow-sm xl:flex">
             <div className="flex items-center gap-5 px-4 py-2">
-              <p className="text-[11px] font-bold uppercase tracking-widest text-slate-500">Credits</p>
+              <p className="text-[11px] font-bold uppercase tracking-widest text-slate-700">Credits</p>
               <div className="flex items-center gap-4 text-center">
                 <div className="min-w-12">
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-600">Earned</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-800">Earned</p>
                   <p className="text-xl font-extrabold leading-6 text-primary">{checklistScore.totalScore}</p>
                 </div>
                 <div className="h-9 w-px bg-slate-200" />
                 <div className="min-w-14">
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-600">Available</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-800">Available</p>
                   <p className="text-xl font-extrabold leading-6 text-primary">{totalAvailable}</p>
                 </div>
                 <div className="h-9 w-px bg-slate-200" />
                 <div className="min-w-12">
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-600">Bonus</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-800">Bonus</p>
                   <p className="text-xl font-extrabold leading-6 text-primary">{checklistScore.totalBonus}</p>
                 </div>
               </div>

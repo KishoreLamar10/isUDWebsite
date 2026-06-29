@@ -11,6 +11,7 @@ const eslintConfig = [
       "node_modules/**",
       "next-env.d.ts",
       "src/generated/**",
+      ".claude/**",
     ],
   },
   ...compat.extends("next/core-web-vitals", "next/typescript"),

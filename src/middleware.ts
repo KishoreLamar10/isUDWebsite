@@ -18,11 +18,11 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/projects/new',
-    '/projects/:id',
-    '/projects/:id/edit',
-    '/projects/:id/checklist',
-    '/projects/:id/team',
+    '/',
+    '/projects/:path*',
     '/admin/:path*',
+    '/account/:path*',
+    '/guide',
+    '/solutions',
   ],
 };

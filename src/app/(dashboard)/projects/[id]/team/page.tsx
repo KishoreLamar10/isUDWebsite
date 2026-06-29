@@ -225,31 +225,32 @@ export default function ProjectTeamPage() {
         <span className="text-slate-500 font-bold">Project Team</span>
       </nav>
 
-      <section className="bg-white border border-slate-200 rounded-sm shadow-sm overflow-hidden">
-        <div className="flex flex-col gap-4 border-b border-slate-200 bg-white px-6 py-4 lg:flex-row lg:items-center lg:justify-between">
-          <h1 className="text-xl font-bold text-primary tracking-tight">
-            Project Team - {project.projectName}
-          </h1>
+      <div className="bg-white border border-slate-200 rounded-sm px-6 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-sm">
+        <h1 className="text-xl font-bold text-primary tracking-tight">
+          Project Team - {project.projectName}
+        </h1>
 
-          <div className="flex flex-wrap items-center gap-3">
-            {canEdit && (
-              <Button
-                onClick={() => setIsModalOpen(true)}
-                className="h-10 rounded-md bg-primary px-4 text-white hover:bg-[#001d3d] font-bold flex items-center gap-2"
-              >
-                <UserPlus size={18} />
-                Add Team Member
-              </Button>
-            )}
+        <div className="flex flex-wrap items-center gap-3">
+          {canEdit && (
             <Button
-              onClick={() => router.push(`/projects/${projectId}`)}
-              className="h-10 rounded-md bg-primary px-4 text-white hover:bg-[#001d3d] font-bold flex items-center gap-2"
+              onClick={() => setIsModalOpen(true)}
+              className="h-10 rounded-md bg-primary px-4 text-white hover:bg-[#001d3d] font-bold flex items-center gap-2 focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2 transition-all active:scale-95"
             >
-              <ArrowLeft size={18} />
-              Project Overview
+              <UserPlus size={18} />
+              Add Team Member
             </Button>
-          </div>
+          )}
+          <Button
+            onClick={() => router.push(`/projects/${projectId}`)}
+            className="h-10 rounded-md bg-primary px-4 text-white hover:bg-[#001d3d] font-bold flex items-center gap-2 focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2 transition-all active:scale-95"
+          >
+            <ArrowLeft size={18} />
+            Project Overview
+          </Button>
         </div>
+      </div>
+
+      <section className="bg-white border border-slate-200 rounded-sm shadow-sm overflow-hidden">
 
         <div className="px-6 py-6">
           {actionError && (
@@ -259,9 +260,6 @@ export default function ProjectTeamPage() {
           )}
 
           <div className="space-y-5">
-            <h2 className="text-lg font-bold text-slate-900">
-              Project Team - {project.projectName}
-            </h2>
 
             <p className="text-sm leading-relaxed text-slate-700">
               <span className="font-bold">Project Manager:</span>{' '}

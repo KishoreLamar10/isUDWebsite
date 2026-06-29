@@ -17,7 +17,7 @@ export const ChecklistSidebar: React.FC<SidebarProps> = ({
   return (
     <div className="w-80 flex-shrink-0 bg-white border-r border-slate-100 flex flex-col pt-4">
       <div className="px-6 py-2 mb-4">
-        <h2 className="text-[12px] font-bold text-slate-600 uppercase tracking-widest">Chapters</h2>
+        <h2 className="text-[12px] font-extrabold text-slate-800 uppercase tracking-widest">Chapters</h2>
       </div>
       <nav className="flex-1 overflow-y-auto pr-px">
         {chapters.map((chapter) => (

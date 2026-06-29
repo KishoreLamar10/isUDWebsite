@@ -108,7 +108,7 @@ export default function LoginForm() {
           </p>
           <div className="space-y-2">
             <label htmlFor="recovery-email" className="text-sm font-semibold text-muted uppercase tracking-wider block">E-mail Address</label>
-            <div className="relative">
+            <div className="relative" suppressHydrationWarning>
               <input
                 id="recovery-email"
                 type="email"
@@ -157,7 +157,7 @@ export default function LoginForm() {
         {/* Email Field */}
         <div className="space-y-2">
           <label htmlFor="login-email" className="text-sm font-semibold text-muted uppercase tracking-wider block">E-mail Address</label>
-          <div className="relative">
+          <div className="relative" suppressHydrationWarning>
             <input
               id="login-email"
               type="email"
@@ -176,7 +176,7 @@ export default function LoginForm() {
         {/* Password Field */}
         <div className="space-y-2">
           <label htmlFor="login-password" className="text-sm font-semibold text-muted uppercase tracking-wider block">Password</label>
-          <div className="relative">
+          <div className="relative" suppressHydrationWarning>
             <input
               id="login-password"
               type="password"

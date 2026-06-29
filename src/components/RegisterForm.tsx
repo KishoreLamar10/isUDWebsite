@@ -125,7 +125,7 @@ export default function RegisterForm() {
             <label className="text-sm font-semibold text-muted uppercase tracking-wider block">
               E-mail Address<span className="text-red-500 ml-1">*</span>
             </label>
-            <div className="relative">
+            <div className="relative" suppressHydrationWarning>
               <input
                 type="email"
                 name="emailAddress"
@@ -141,7 +141,7 @@ export default function RegisterForm() {
             <label className="text-sm font-semibold text-muted uppercase tracking-wider block">
               Telephone<span className="text-red-500 ml-1">*</span>
             </label>
-            <div className="relative">
+            <div className="relative" suppressHydrationWarning>
               <input
                 type="tel"
                 name="telephone"
@@ -226,7 +226,7 @@ export default function RegisterForm() {
         {/* Security Fields */}
         <div className="space-y-6 pt-4 border-t border-slate-100">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            <div className="space-y-2">
+            <div className="space-y-2" suppressHydrationWarning>
               <label className="text-sm font-semibold text-muted uppercase tracking-wider block">
                 Password<span className="text-red-500 ml-1">*</span>
               </label>
@@ -239,7 +239,7 @@ export default function RegisterForm() {
                 onChange={handleInputChange}
               />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-2" suppressHydrationWarning>
               <label className="text-sm font-semibold text-muted uppercase tracking-wider block">
                 Confirm Password<span className="text-red-500 ml-1">*</span>
               </label>
@@ -276,7 +276,7 @@ export default function RegisterForm() {
                 <option>What was the first name of the boss at your first job?</option>
               </select>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-2" suppressHydrationWarning>
               <label className="text-sm font-semibold text-muted uppercase tracking-wider block">
                 Security Answer<span className="text-red-500 ml-1">*</span>
               </label>

@@ -42,8 +42,8 @@ export default function ChecklistPrintModal({ chapters, responses, toggles, onCl
     const selectedChapters = chapters.filter((c) => selected.has(c.id));
 
     printRoot.innerHTML = `
-      <div style="margin-bottom:24px;padding-bottom:16px;border-bottom:2px solid #e2e8f0;display:flex;align-items:center;gap:12px;">
-        <span style="font-size:28px;font-weight:900;color:#003366;letter-spacing:-1px;">isUD<span style="color:#F7941D;margin-left:4px;">&gt;</span></span>
+      <div style="margin-bottom:24px;padding-bottom:16px;border-bottom:2px solid #e2e8f0;display:flex;align-items:center;gap:16px;">
+        <img src="/logo.png" style="height:36px;width:auto;" alt="isUD - Innovative solutions for Universal Design" />
         <span style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;color:#64748b;">Innovative Solutions for Universal Design</span>
       </div>
       ${selectedChapters.map((chapter, i) => `

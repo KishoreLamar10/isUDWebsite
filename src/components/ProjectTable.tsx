@@ -4,6 +4,9 @@ import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { Search, Plus, Info, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useCallback, useMemo, useState, useEffect } from 'react';
+import { getCached, setCached } from '@/lib/clientCache';
+
+const PROJECTS_CACHE_KEY = 'projects:list';
 
 const tableHeaders = ['ID', 'Name', 'Owner', 'Status', 'Score'];
 
@@ -48,8 +51,9 @@ const secondaryLinkClass = 'inline-flex items-center justify-center gap-2 rounde
 
 export default function ProjectTable() {
   const { data: session } = useSession();
-  const [projects, setProjects] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const cachedProjects = getCached<any[]>(PROJECTS_CACHE_KEY);
+  const [projects, setProjects] = useState<any[]>(cachedProjects || []);
+  const [isLoading, setIsLoading] = useState(!cachedProjects);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState('date');
   const [filterBy, setFilterBy] = useState('ALL');
@@ -66,9 +70,13 @@ export default function ProjectTable() {
       }
       const data = await response.json();
       setProjects(data);
+      setCached(PROJECTS_CACHE_KEY, data);
     } catch (error: any) {
       console.error('Error fetching projects:', error);
-      setFetchError(error.message || 'Failed to load projects. Please refresh the page.');
+      // Only surface the error if we have nothing cached to fall back on.
+      if (!getCached(PROJECTS_CACHE_KEY)) {
+        setFetchError(error.message || 'Failed to load projects. Please refresh the page.');
+      }
     } finally {
       setIsLoading(false);
     }

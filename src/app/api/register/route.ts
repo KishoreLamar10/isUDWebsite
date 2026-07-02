@@ -39,6 +39,14 @@ export async function POST(req: Request) {
       return new NextResponse("Password must be at least 8 characters", { status: 400 });
     }
 
+    if (typeof securityQuestion !== "string" || !securityQuestion.trim()) {
+      return new NextResponse("Security question is required", { status: 400 });
+    }
+
+    if (typeof securityAnswer !== "string" || !securityAnswer.trim()) {
+      return new NextResponse("Security answer is required", { status: 400 });
+    }
+
     // Check if email already exists
     const exists = await prisma.user.findUnique({
       where: {

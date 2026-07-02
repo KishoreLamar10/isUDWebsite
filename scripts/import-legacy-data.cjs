@@ -8,7 +8,7 @@ const prisma = new PrismaClient();
 
 const args = new Set(process.argv.slice(2));
 const sourceArg = process.argv.find((arg) => arg.startsWith("--source="));
-const sourcePath = sourceArg ? sourceArg.slice("--source=".length) : "thisisud_live.sql.zip";
+const sourcePath = sourceArg ? sourceArg.slice("--source=".length) : "thisisud_livemigration.sql";
 const shouldApply = args.has("--apply");
 const activeOnly = args.has("--active-only");
 
@@ -264,8 +264,14 @@ function getLegacyScoreSnapshot(legacyProject) {
 
 function mapProjectStatus(status) {
   if (status === "1") return "COMPLETED";
+  if (status === "2") return "IN_REVIEW";
   if (status === "4") return "INACTIVE";
   return "ONGOING";
+}
+
+function isAdminAuthType(authTypeId) {
+  // AuthTypes: 1 = Admin, 2 = Database Admin (also super admin)
+  return authTypeId === "1" || authTypeId === "2";
 }
 
 function mapPermission(permissionId) {
@@ -276,11 +282,11 @@ function mapPermission(permissionId) {
 
 function mapProjectRole(roleId) {
   const roles = {
-    "1": "PROJECT_MANAGER",
-    "2": "ARCHITECT",
-    "3": "CONSULTANT",
-    "4": "DEVELOPMENT",
-    "5": "OWNERSHIP",
+    "1": "ARCHITECT",
+    "2": "CONSULTANT",
+    "3": "DEVELOPMENT",
+    "4": "OWNERSHIP",
+    "5": "HR",
     "6": "ADVOCATE",
   };
   return roles[roleId] || "ARCHITECT";
@@ -508,7 +514,7 @@ async function main() {
           reason,
           securityQuestion,
           hashedSecurityAnswer,
-          systemRole: legacyUser.authtype_id === "1" ? "ADMIN" : "USER",
+          systemRole: isAdminAuthType(legacyUser.authtype_id) ? "ADMIN" : "USER",
         },
       });
       continue;
@@ -528,7 +534,8 @@ async function main() {
         hashedPassword: hashedTemporaryPassword,
         securityQuestion,
         hashedSecurityAnswer,
-        systemRole: legacyUser.authtype_id === "1" ? "ADMIN" : "USER",
+        mustSetSecurityQuestion: true,
+        systemRole: isAdminAuthType(legacyUser.authtype_id) ? "ADMIN" : "USER",
         createdAt: parseDate(legacyUser.ts_created) || new Date(),
       },
     });
@@ -556,6 +563,7 @@ async function main() {
         hashedPassword: hashedTemporaryPassword,
         securityQuestion: "What was the name of your first pet?",
         hashedSecurityAnswer: await bcrypt.hash(`legacy-${missingOwnerId}`.toLowerCase(), 10),
+        mustSetSecurityQuestion: true,
         systemRole: "USER",
       },
     });

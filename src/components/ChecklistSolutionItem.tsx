@@ -146,7 +146,7 @@ export const ChecklistSolutionItem: React.FC<SolutionProps> = ({
                       {allPhases.map((p) => {
                         const isMatched = solution.phases.some((ph: any) => ph.name === p.name);
                         return (
-                          <div key={p.id} className={`flex items-center gap-1.5 ${isMatched ? 'text-orange-500 font-bold' : 'text-slate-400 opacity-40'}`}>
+                          <div key={p.id} className={`flex items-center gap-1.5 ${isMatched ? 'text-orange-500 font-bold' : 'text-slate-600'}`}>
                             {isMatched && <Check className="w-3.5 h-3.5 stroke-[3]" aria-hidden="true" />}
                             {p.name}
                           </div>
@@ -162,7 +162,7 @@ export const ChecklistSolutionItem: React.FC<SolutionProps> = ({
                       {allGoals.map((g) => {
                         const isMatched = solution.goals.some((go: any) => go.text === g.text);
                         return (
-                          <div key={g.id} className={`${isMatched ? 'text-slate-900 font-bold bg-slate-100 px-2 py-0.5 rounded border border-slate-200' : 'text-slate-400 opacity-40'}`}>
+                          <div key={g.id} className={`${isMatched ? 'text-slate-900 font-bold bg-slate-100 px-2 py-0.5 rounded border border-slate-200' : 'text-slate-600'}`}>
                             {g.text}
                           </div>
                         );

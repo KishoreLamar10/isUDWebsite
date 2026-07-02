@@ -21,6 +21,7 @@ model User {
   hashedPassword       String
   securityQuestion     String
   hashedSecurityAnswer String
+  mustSetSecurityQuestion Boolean @default(false)
   systemRole           SystemRole @default(USER)
   createdAt            DateTime   @default(now())
   updatedAt            DateTime   @updatedAt

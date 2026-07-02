@@ -65,9 +65,33 @@ export async function POST(req: Request) {
   }
 }
 
+export async function GET(req: Request) {
+  try {
+    const token = new URL(req.url).searchParams.get('token');
+
+    if (!token) {
+      return NextResponse.json({ error: 'Token is required' }, { status: 400 });
+    }
+
+    const resetToken = await prisma.passwordResetToken.findUnique({
+      where: { tokenHash: hashPasswordResetToken(token) },
+      include: { user: { select: { mustSetSecurityQuestion: true } } },
+    });
+
+    if (!resetToken || resetToken.usedAt || resetToken.expiresAt < new Date()) {
+      return NextResponse.json({ error: 'This password setup link is invalid or expired' }, { status: 400 });
+    }
+
+    return NextResponse.json({ requiresSecurityQuestion: resetToken.user.mustSetSecurityQuestion });
+  } catch (error) {
+    console.error('[PASSWORD_RECOVERY_TOKEN_LOOKUP_ERROR]', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
 export async function PATCH(req: Request) {
   try {
-    const { token, password } = await req.json();
+    const { token, password, securityQuestion, securityAnswer } = await req.json();
 
     if (!token || !password) {
       return NextResponse.json({ error: 'Token and password are required' }, { status: 400 });
@@ -79,18 +103,35 @@ export async function PATCH(req: Request) {
 
     const resetToken = await prisma.passwordResetToken.findUnique({
       where: { tokenHash: hashPasswordResetToken(token) },
+      include: { user: { select: { mustSetSecurityQuestion: true } } },
     });
 
     if (!resetToken || resetToken.usedAt || resetToken.expiresAt < new Date()) {
       return NextResponse.json({ error: 'This password setup link is invalid or expired' }, { status: 400 });
     }
 
+    if (resetToken.user.mustSetSecurityQuestion) {
+      if (typeof securityQuestion !== 'string' || !securityQuestion.trim()) {
+        return NextResponse.json({ error: 'Security question is required' }, { status: 400 });
+      }
+      if (typeof securityAnswer !== 'string' || !securityAnswer.trim()) {
+        return NextResponse.json({ error: 'Security answer is required' }, { status: 400 });
+      }
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
+    const securityUpdate = resetToken.user.mustSetSecurityQuestion
+      ? {
+          securityQuestion,
+          hashedSecurityAnswer: await bcrypt.hash(String(securityAnswer).toLowerCase().trim(), 10),
+          mustSetSecurityQuestion: false,
+        }
+      : {};
 
     await prisma.$transaction([
       prisma.user.update({
         where: { id: resetToken.userId },
-        data: { hashedPassword },
+        data: { hashedPassword, ...securityUpdate },
       }),
       prisma.passwordResetToken.update({
         where: { id: resetToken.id },

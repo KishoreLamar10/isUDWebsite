@@ -116,7 +116,7 @@ export const ChecklistSectionList: React.FC<SectionListProps> = ({
 
                 <div className="flex items-center gap-6">
                   <div className="flex flex-col items-center">
-                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1">Section</span>
+                    <span className="text-[10px] text-slate-600 font-bold uppercase tracking-wider mb-1">Section</span>
                     <button
                       type="button"
                       onClick={() => !readOnly && onSectionToggleChange(section.id, !isSectionEnabled)}
@@ -139,19 +139,19 @@ export const ChecklistSectionList: React.FC<SectionListProps> = ({
                   </div>
 
                   <div className="flex flex-col items-center">
-                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1">Solutions</span>
-                    <div className="flex items-center h-7 px-3 rounded-full bg-slate-200/60 text-slate-700 text-sm font-bold min-w-[70px] justify-center">
+                    <span className="text-[10px] text-slate-600 font-bold uppercase tracking-wider mb-1">Solutions</span>
+                    <div className="flex items-center h-7 px-3 rounded-full bg-slate-200/60 text-slate-600 text-sm font-bold min-w-[70px] justify-center">
                       <span className={implementedCount > 0 ? 'text-primary' : ''}>{implementedCount}</span>
-                      <span className="mx-1 opacity-40 font-normal">of</span>
+                      <span className="mx-1 font-normal">of</span>
                       <span>{totalSolutions}</span>
                     </div>
                   </div>
 
                   <div className="flex flex-col items-center">
-                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1">Credits</span>
-                    <div className="flex items-center h-7 px-3 rounded-full bg-slate-200/60 text-slate-700 text-sm font-bold min-w-[70px] justify-center">
+                    <span className="text-[10px] text-slate-600 font-bold uppercase tracking-wider mb-1">Credits</span>
+                    <div className="flex items-center h-7 px-3 rounded-full bg-slate-200/60 text-slate-600 text-sm font-bold min-w-[70px] justify-center">
                       <span className={earned > 0 ? 'text-primary transition-all duration-300' : ''}>{earned}</span>
-                      <span className="mx-1 opacity-40 font-normal">of</span>
+                      <span className="mx-1 font-normal">of</span>
                       <span>{isSectionEnabled ? section.totalCredits : 0}</span>
                     </div>
                   </div>
@@ -161,7 +161,7 @@ export const ChecklistSectionList: React.FC<SectionListProps> = ({
               <div className={`bg-white rounded-lg border border-slate-200 overflow-hidden shadow-sm ${isSectionEnabled ? '' : 'bg-slate-50'}`}>
                 <div className="px-6 py-2 bg-slate-50 border-b border-slate-200 h-10 flex items-center">
                   {!isSectionEnabled ? (
-                    <span className="text-[12px] font-bold text-slate-400 uppercase tracking-widest">Section excluded from available credits</span>
+                    <span className="text-[12px] font-bold text-slate-600 uppercase tracking-widest">Section excluded from available credits</span>
                   ) : (section.minPoints1 > 0 || section.minPoints2 > 0) ? (
                     <span className="text-[12px] font-semibold text-slate-900">
                       {section.minPoints2 > 0 && `${section.totalCredits} Credits: Implement ${section.minPoints2} of ${totalSolutions}`}
@@ -169,7 +169,7 @@ export const ChecklistSectionList: React.FC<SectionListProps> = ({
                       {section.minPoints1 > 0 && `${Math.max(1, Math.floor(section.totalCredits / 2))} Credit: Implement ${section.minPoints1} of ${totalSolutions}`}
                     </span>
                   ) : (
-                    <span className="text-[12px] font-medium text-slate-400 uppercase tracking-widest">Standard Point Value</span>
+                    <span className="text-[12px] font-medium text-slate-600 uppercase tracking-widest">Standard Point Value</span>
                   )}
                 </div>
                 <div className="divide-y divide-slate-100">

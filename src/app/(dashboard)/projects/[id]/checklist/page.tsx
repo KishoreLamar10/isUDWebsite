@@ -9,78 +9,111 @@ import { Printer, ChevronRight, CheckCircle2, AlertCircle } from 'lucide-react';
 import ChecklistPrintModal from '@/components/ChecklistPrintModal';
 import { calculateProjectScore } from '@/lib/scoring';
 import { PreliminaryChecklistInfo } from '@/components/PreliminaryChecklistInfo';
+import { getCached, setCached } from '@/lib/clientCache';
 
 interface Params {
   id: string;
 }
 
+interface ChecklistPayload {
+  chapters: any[];
+  allPhases: any[];
+  allGoals: any[];
+  userRole: string;
+  userStatus: string;
+  responses: Array<{ solutionId: string; status: ResponseStatus }>;
+  toggles: Array<{ sectionId: string; isEnabled: boolean }>;
+}
+
+function toResponseMap(responses: ChecklistPayload['responses']) {
+  const map: Record<string, ResponseStatus> = {};
+  responses.forEach((r) => { map[r.solutionId] = r.status; });
+  return map;
+}
+
+function toToggleMap(toggles: ChecklistPayload['toggles']) {
+  const map: Record<string, boolean> = {};
+  toggles.forEach((t) => { map[t.sectionId] = t.isEnabled; });
+  return map;
+}
+
 export default function ChecklistPage({ params }: { params: Promise<Params> }) {
   const { id } = use(params);
-  const [loading, setLoading] = useState(true);
+  const cacheKey = `checklist:${id}`;
+  const cachedPayload = getCached<ChecklistPayload>(cacheKey);
+
+  const [loading, setLoading] = useState(!cachedPayload);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(false);
   const [hasSaved, setHasSaved] = useState(false);
-  
-  const [chapters, setChapters] = useState<any[]>([]);
-  const [activeChapterId, setActiveChapterId] = useState<string>('');
-  const [allPhases, setAllPhases] = useState<any[]>([]);
-  const [allGoals, setAllGoals] = useState<any[]>([]);
-  
+
+  const [chapters, setChapters] = useState<any[]>(cachedPayload?.chapters || []);
+  const [activeChapterId, setActiveChapterId] = useState<string>(cachedPayload?.chapters?.[0]?.id || '');
+  const [allPhases, setAllPhases] = useState<any[]>(cachedPayload?.allPhases || []);
+  const [allGoals, setAllGoals] = useState<any[]>(cachedPayload?.allGoals || []);
+
   // Local state for edits
-  const [responses, setResponses] = useState<Record<string, ResponseStatus>>({});
-  const [toggles, setToggles] = useState<Record<string, boolean>>({});
-  const responsesRef = useRef<Record<string, ResponseStatus>>({});
-  const togglesRef = useRef<Record<string, boolean>>({});
+  const [responses, setResponses] = useState<Record<string, ResponseStatus>>(() => cachedPayload ? toResponseMap(cachedPayload.responses) : {});
+  const [toggles, setToggles] = useState<Record<string, boolean>>(() => cachedPayload ? toToggleMap(cachedPayload.toggles) : {});
+  const responsesRef = useRef<Record<string, ResponseStatus>>(cachedPayload ? toResponseMap(cachedPayload.responses) : {});
+  const togglesRef = useRef<Record<string, boolean>>(cachedPayload ? toToggleMap(cachedPayload.toggles) : {});
   const dirtyResponsesRef = useRef<Record<string, ResponseStatus>>({});
   const dirtyTogglesRef = useRef<Record<string, boolean>>({});
   const saveRequestRef = useRef(0);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const saveInFlightRef = useRef(false);
   const savePendingRef = useRef(false);
-  
-  const [userRole, setUserRole] = useState<string>('VIEWER');
-  const [userStatus, setUserStatus] = useState<string>('PENDING');
+
+  const [userRole, setUserRole] = useState<string>(cachedPayload?.userRole || 'VIEWER');
+  const [userStatus, setUserStatus] = useState<string>(cachedPayload?.userStatus || 'PENDING');
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [printModalOpen, setPrintModalOpen] = useState(false);
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (isBackgroundRefresh: boolean) => {
     try {
-      setLoading(true);
+      if (!isBackgroundRefresh) setLoading(true);
       setErrorMessage('');
       const res = await fetch(`/api/projects/${id}/checklist`);
       const data = await res.json();
-      
+
       if (!res.ok || data.error) {
-        setErrorMessage(data.error || 'Unable to load checklist.');
+        if (!isBackgroundRefresh) setErrorMessage(data.error || 'Unable to load checklist.');
         return;
       }
 
+      setCached<ChecklistPayload>(cacheKey, data);
+
       setChapters(data.chapters);
-      if (data.chapters.length > 0) setActiveChapterId(data.chapters[0].id);
+      setActiveChapterId((current) => current || data.chapters[0]?.id || '');
       setAllPhases(data.allPhases || []);
       setAllGoals(data.allGoals || []);
       setUserRole(data.userRole || 'VIEWER');
       setUserStatus(data.userStatus || 'PENDING');
 
-      const resMap: Record<string, ResponseStatus> = {};
-      data.responses.forEach((r: any) => resMap[r.solutionId] = r.status);
-      setResponses(resMap);
-      responsesRef.current = resMap;
+      // Never clobber in-flight or unsaved local edits with a background refresh.
+      const hasPendingEdits = saveInFlightRef.current
+        || Object.keys(dirtyResponsesRef.current).length > 0
+        || Object.keys(dirtyTogglesRef.current).length > 0;
 
-      const toggleMap: Record<string, boolean> = {};
-      data.toggles.forEach((t: any) => toggleMap[t.sectionId] = t.isEnabled);
-      setToggles(toggleMap);
-      togglesRef.current = toggleMap;
+      if (!hasPendingEdits) {
+        const resMap = toResponseMap(data.responses);
+        setResponses(resMap);
+        responsesRef.current = resMap;
 
+        const toggleMap = toToggleMap(data.toggles);
+        setToggles(toggleMap);
+        togglesRef.current = toggleMap;
+      }
     } catch {
-      setErrorMessage('Unable to load checklist. Please try again.');
+      if (!isBackgroundRefresh) setErrorMessage('Unable to load checklist. Please try again.');
     } finally {
-      setLoading(false);
+      if (!isBackgroundRefresh) setLoading(false);
     }
-  }, [id]);
+  }, [id, cacheKey]);
 
   useEffect(() => {
-    fetchData();
+    fetchData(Boolean(cachedPayload));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetchData]);
 
   const saveLatestChecklist = useCallback(async () => {

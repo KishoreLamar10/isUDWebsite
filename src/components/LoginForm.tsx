@@ -87,6 +87,12 @@ export default function LoginForm() {
 
       if (!response.ok) throw new Error(data.error || 'Unable to find that account');
 
+      if (data.requiresEmailSetup) {
+        setSuccess('This account needs a fresh security question set up. We sent a link to set your password and security question.');
+        resetRecoveryState();
+        return;
+      }
+
       setSecurityQuestion(data.question);
       setRecoveryStep('question');
     } catch (err: any) {

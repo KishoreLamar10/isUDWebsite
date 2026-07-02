@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { createPasswordResetToken, getBaseUrl, sendPasswordSetupEmail } from '@/lib/passwordSetupEmail';
 import { checkRateLimit, getRequestIp, hashRateLimitKey } from '@/lib/rateLimit';
 
 export async function POST(req: Request) {
@@ -32,11 +33,26 @@ export async function POST(req: Request) {
 
     const user = await prisma.user.findUnique({
       where: { email: normalizedEmail },
-      select: { securityQuestion: true },
+      select: { id: true, email: true, firstName: true, lastName: true, securityQuestion: true, mustSetSecurityQuestion: true },
     });
 
     if (!user) {
       return NextResponse.json({ error: 'No account found for that email.' }, { status: 404 });
+    }
+
+    // Migrated accounts have a legacy or placeholder answer nobody can know.
+    // Skip straight to emailing a reset link instead of asking an unanswerable question.
+    if (user.mustSetSecurityQuestion) {
+      const token = await createPasswordResetToken(user.id);
+      const resetUrl = `${getBaseUrl()}/reset-password?token=${token}`;
+
+      await sendPasswordSetupEmail({
+        email: user.email,
+        name: `${user.firstName} ${user.lastName}`.trim(),
+        resetUrl,
+      });
+
+      return NextResponse.json({ requiresEmailSetup: true });
     }
 
     return NextResponse.json({ question: user.securityQuestion });

@@ -124,7 +124,7 @@ export default function BrowseSolutionsClient({ chapters }: BrowseSolutionsClien
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 min-h-[640px]">
-          <div className="lg:col-span-4 border-r border-slate-200 bg-white">
+          <div className="lg:col-span-3 border-r border-slate-200 bg-white">
             <div className="border-b border-slate-100 px-6 py-3">
               <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Chapters</p>
             </div>
@@ -164,7 +164,7 @@ export default function BrowseSolutionsClient({ chapters }: BrowseSolutionsClien
             </div>
           </div>
 
-          <div className="lg:col-span-8 bg-white">
+          <div className="lg:col-span-9 bg-white">
             {!activeChapter ? (
               <div className="p-10 text-sm text-slate-500">No solutions available.</div>
             ) : (

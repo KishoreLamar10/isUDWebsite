@@ -1,25 +1,3 @@
-import nodemailer from 'nodemailer';
-
-let cachedTransporter: nodemailer.Transporter | null = null;
-
-function getTransporter() {
-  if (cachedTransporter) return cachedTransporter;
-
-  const user = process.env.GMAIL_USER;
-  const pass = process.env.GMAIL_APP_PASSWORD;
-
-  if (!user || !pass) {
-    throw new Error('GMAIL_USER and GMAIL_APP_PASSWORD must be set to send email.');
-  }
-
-  cachedTransporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: { user, pass },
-  });
-
-  return cachedTransporter;
-}
-
 type SendMailInput = {
   to: string;
   subject: string;
@@ -28,8 +6,31 @@ type SendMailInput = {
 };
 
 export async function sendMail({ to, subject, html, text }: SendMailInput) {
-  const transporter = getTransporter();
-  const from = process.env.EMAIL_FROM || process.env.GMAIL_USER;
+  const apiKey = process.env.BREVO_API_KEY;
+  const senderEmail = process.env.BREVO_SENDER_EMAIL || 'info@thisisud.com';
 
-  await transporter.sendMail({ from, to, subject, html, text });
+  if (!apiKey) {
+    throw new Error('BREVO_API_KEY must be set to send email.');
+  }
+
+  const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+    method: 'POST',
+    headers: {
+      'api-key': apiKey,
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    },
+    body: JSON.stringify({
+      sender: { name: 'isUD', email: senderEmail },
+      to: [{ email: to }],
+      subject,
+      htmlContent: html,
+      textContent: text,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Unable to send email via Brevo: ${errorText}`);
+  }
 }

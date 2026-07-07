@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { requireAdminSession } from '@/lib/adminAuth';
 import { compareNumericText, sortChecklistHierarchy } from '@/lib/naturalSort';
 import { prisma } from '@/lib/prisma';
@@ -24,6 +25,22 @@ const resources = new Set<Resource>([
 
 function cleanString(value: unknown) {
   return typeof value === 'string' ? value.trim() : '';
+}
+
+const uniqueFieldMessages: Record<string, string> = {
+  standardNumber: 'A solution with that standard number already exists. Choose a different standard number.',
+  number: 'That number is already used by a sibling item. Choose a different number.',
+  abbr: 'A goal with that abbreviation already exists. Choose a different abbreviation.',
+  name: 'That name is already in use. Choose a different name.',
+};
+
+function friendlyLibraryError(error: any) {
+  if (error?.code === 'P2002') {
+    const target = Array.isArray(error?.meta?.target) ? error.meta.target : [];
+    const field = target.find((name: string) => uniqueFieldMessages[name]);
+    return field ? uniqueFieldMessages[field] : 'That value conflicts with an existing item. Please use a different value.';
+  }
+  return error?.message || 'Unable to update library';
 }
 
 function stringField(name: string, value: unknown, { required = false, max = SHORT_TEXT_MAX }: FieldOptions = {}) {
@@ -410,6 +427,7 @@ export async function POST(req: Request) {
 
     if (action === 'create') {
       const result = await createResource(resource, body.data || {});
+      revalidateTag('chapter-library');
       return NextResponse.json(result, { status: 201 });
     }
 
@@ -417,22 +435,27 @@ export async function POST(req: Request) {
     if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 });
 
     if (action === 'archive') {
-      return NextResponse.json(await setArchive(resource, id, true));
+      const result = await setArchive(resource, id, true);
+      revalidateTag('chapter-library');
+      return NextResponse.json(result);
     }
 
     if (action === 'restore') {
-      return NextResponse.json(await setArchive(resource, id, false));
+      const result = await setArchive(resource, id, false);
+      revalidateTag('chapter-library');
+      return NextResponse.json(result);
     }
 
     if (action === 'move') {
       const direction = body.direction === 'up' ? 'up' : 'down';
-      return NextResponse.json(await moveResource(resource, id, direction));
+      const result = await moveResource(resource, id, direction);
+      revalidateTag('chapter-library');
+      return NextResponse.json(result);
     }
 
     return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
   } catch (error: any) {
-    const status = error?.code === 'P2002' ? 409 : 400;
-    return NextResponse.json({ error: error?.message || 'Unable to update library' }, { status });
+    return NextResponse.json({ error: friendlyLibraryError(error) }, { status: error?.code === 'P2002' ? 409 : 400 });
   }
 }
 
@@ -447,9 +470,10 @@ export async function PATCH(req: Request) {
 
     if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 });
 
-    return NextResponse.json(await updateResource(resource, id, body.data || {}));
+    const result = await updateResource(resource, id, body.data || {});
+    revalidateTag('chapter-library');
+    return NextResponse.json(result);
   } catch (error: any) {
-    const status = error?.code === 'P2002' ? 409 : 400;
-    return NextResponse.json({ error: error?.message || 'Unable to update library' }, { status });
+    return NextResponse.json({ error: friendlyLibraryError(error) }, { status: error?.code === 'P2002' ? 409 : 400 });
   }
 }

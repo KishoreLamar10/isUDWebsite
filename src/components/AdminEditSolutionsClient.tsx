@@ -388,7 +388,18 @@ export default function AdminEditSolutionsClient() {
     apiAction(hasId ? 'PATCH' : 'POST', body, hasId ? 'Updated' : 'Created');
   }
 
+  const archiveWarnings: Partial<Record<Resource, string>> = {
+    chapter: 'Archiving this chapter will also hide every section, solution, and figure inside it from Browse Solutions and project checklists. Continue?',
+    section: 'Archiving this section will also hide every solution and figure inside it from Browse Solutions and project checklists. Continue?',
+    subSection: 'Archiving this subsection will also hide its solutions from Browse Solutions and project checklists. Continue?',
+    solution: 'Archive this solution? It will be hidden from Browse Solutions and project checklists.',
+  };
+
   function archiveAction(resource: Resource, id: string, archived: boolean) {
+    if (!archived) {
+      const warning = archiveWarnings[resource] || 'Archive this item?';
+      if (!window.confirm(warning)) return;
+    }
     apiAction('POST', { action: archived ? 'restore' : 'archive', resource, id }, archived ? 'Restored' : 'Archived');
   }
 

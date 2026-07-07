@@ -96,6 +96,12 @@ function archivedWhere(showArchived: boolean) {
   return showArchived ? {} : { archivedAt: null };
 }
 
+// "Show archived" is a filter to review what's been archived, not a toggle
+// to mix archived items back in with active ones.
+function archivedOnlyWhere(showArchived: boolean) {
+  return showArchived ? { archivedAt: { not: null } } : { archivedAt: null };
+}
+
 async function getLibrary(showArchived: boolean) {
   const chapters = sortChecklistHierarchy(await prisma.chapter.findMany({
     where: archivedWhere(showArchived),
@@ -112,7 +118,7 @@ async function getLibrary(showArchived: boolean) {
             orderBy: { number: 'asc' },
           },
           solutions: {
-            where: archivedWhere(showArchived),
+            where: archivedOnlyWhere(showArchived),
             include: {
               goals: {
                 where: archivedWhere(showArchived),

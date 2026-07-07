@@ -854,7 +854,7 @@ function EditForm({
       <div className="space-y-5 p-4 sm:p-5">
       {target.resource === 'chapter' && (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <Field label="Number" value={item.number} onChange={(value) => update({ number: value })} disabled={!item.id} helperText={!item.id ? 'Assigned automatically at the end of the list' : undefined} />
+          {item.id && <Field label="Number" value={item.number} onChange={(value) => update({ number: value })} />}
           <Field label="Total credits" type="number" value={item.totalCredits} onChange={(value) => update({ totalCredits: value })} />
           <Field label="Title" value={item.title} onChange={(value) => update({ title: value })} wide />
         </div>
@@ -873,7 +873,7 @@ function EditForm({
               )}
               options={chapters.map((ch) => ({ value: ch.id, label: `${ch.number} ${ch.title}` }))}
             />
-            <Field label="Number" value={item.number} onChange={(value) => update({ number: value })} disabled={!item.id} helperText={!item.id ? 'Assigned automatically at the end of the list' : undefined} />
+            {item.id && <Field label="Number" value={item.number} onChange={(value) => update({ number: value })} />}
             <Field label="Total credits" type="number" value={item.totalCredits} onChange={(value) => update({ totalCredits: value })} />
             <Field label="Title" value={item.title} onChange={(value) => update({ title: value })} wide />
             <Field label="Min points 1" type="number" value={item.minPoints1} onChange={(value) => update({ minPoints1: value })} />
@@ -902,7 +902,7 @@ function EditForm({
             )}
             options={chapters.flatMap((ch) => ch.sections.map((sec) => ({ value: sec.id, label: `${ch.number}.${sec.number} ${sec.title}` })))}
           />
-          <Field label="Number" value={item.number} onChange={(value) => update({ number: value })} disabled={!item.id} helperText={!item.id ? 'Assigned automatically at the end of the list' : undefined} />
+          {item.id && <Field label="Number" value={item.number} onChange={(value) => update({ number: value })} />}
           <Field label="Total credits" type="number" value={item.totalCredits} onChange={(value) => update({ totalCredits: value })} />
           <Field label="Title" value={item.title} onChange={(value) => update({ title: value })} wide />
         </div>

@@ -854,7 +854,7 @@ function EditForm({
       <div className="space-y-5 p-4 sm:p-5">
       {target.resource === 'chapter' && (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <Field label="Number" value={item.number} onChange={(value) => update({ number: value })} />
+          <Field label="Number" value={item.number} onChange={(value) => update({ number: value })} disabled={!item.id} helperText={!item.id ? 'Assigned automatically at the end of the list' : undefined} />
           <Field label="Total credits" type="number" value={item.totalCredits} onChange={(value) => update({ totalCredits: value })} />
           <Field label="Title" value={item.title} onChange={(value) => update({ title: value })} wide />
         </div>
@@ -863,8 +863,17 @@ function EditForm({
       {target.resource === 'section' && (
         <div className="space-y-4">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <SelectField label="Chapter" value={item.chapterId || chapter?.id || ''} onChange={(value) => update({ chapterId: value })} options={chapters.map((ch) => ({ value: ch.id, label: `${ch.number} ${ch.title}` }))} />
-            <Field label="Number" value={item.number} onChange={(value) => update({ number: value })} />
+            <SelectField
+              label="Chapter"
+              value={item.chapterId || chapter?.id || ''}
+              onChange={(value) => update(
+                item.id
+                  ? { chapterId: value }
+                  : { chapterId: value, number: nextNumber(chapters.find((ch) => ch.id === value)?.sections || []) }
+              )}
+              options={chapters.map((ch) => ({ value: ch.id, label: `${ch.number} ${ch.title}` }))}
+            />
+            <Field label="Number" value={item.number} onChange={(value) => update({ number: value })} disabled={!item.id} helperText={!item.id ? 'Assigned automatically at the end of the list' : undefined} />
             <Field label="Total credits" type="number" value={item.totalCredits} onChange={(value) => update({ totalCredits: value })} />
             <Field label="Title" value={item.title} onChange={(value) => update({ title: value })} wide />
             <Field label="Min points 1" type="number" value={item.minPoints1} onChange={(value) => update({ minPoints1: value })} />
@@ -883,8 +892,17 @@ function EditForm({
 
       {target.resource === 'subSection' && (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <SelectField label="Section" value={item.sectionId || section?.id || ''} onChange={(value) => update({ sectionId: value })} options={chapters.flatMap((ch) => ch.sections.map((sec) => ({ value: sec.id, label: `${ch.number}.${sec.number} ${sec.title}` })))} />
-          <Field label="Number" value={item.number} onChange={(value) => update({ number: value })} />
+          <SelectField
+            label="Section"
+            value={item.sectionId || section?.id || ''}
+            onChange={(value) => update(
+              item.id
+                ? { sectionId: value }
+                : { sectionId: value, number: nextNumber(chapters.flatMap((ch) => ch.sections).find((sec) => sec.id === value)?.subSections || []) }
+            )}
+            options={chapters.flatMap((ch) => ch.sections.map((sec) => ({ value: sec.id, label: `${ch.number}.${sec.number} ${sec.title}` })))}
+          />
+          <Field label="Number" value={item.number} onChange={(value) => update({ number: value })} disabled={!item.id} helperText={!item.id ? 'Assigned automatically at the end of the list' : undefined} />
           <Field label="Total credits" type="number" value={item.totalCredits} onChange={(value) => update({ totalCredits: value })} />
           <Field label="Title" value={item.title} onChange={(value) => update({ title: value })} wide />
         </div>
@@ -893,9 +911,22 @@ function EditForm({
       {target.resource === 'solution' && (
         <div className="space-y-4">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 2xl:grid-cols-3">
-            <SelectField label="Section" value={item.sectionId || section?.id || ''} onChange={(value) => update({ sectionId: value, subSectionId: '' })} options={chapters.flatMap((ch) => ch.sections.map((sec) => ({ value: sec.id, label: `${ch.number}.${sec.number} ${sec.title}` })))} />
+            <SelectField
+              label="Section"
+              value={item.sectionId || section?.id || ''}
+              onChange={(value) => {
+                const nextSection = chapters.flatMap((ch) => ch.sections).find((sec) => sec.id === value);
+                const nextChapter = chapters.find((ch) => ch.sections.some((sec) => sec.id === value));
+                update(
+                  item.id
+                    ? { sectionId: value, subSectionId: '' }
+                    : { sectionId: value, subSectionId: '', standardNumber: nextSolutionNumber(nextChapter, nextSection) }
+                );
+              }}
+              options={chapters.flatMap((ch) => ch.sections.map((sec) => ({ value: sec.id, label: `${ch.number}.${sec.number} ${sec.title}` })))}
+            />
             <SelectField label="Subsection" value={item.subSectionId || ''} onChange={(value) => update({ subSectionId: value })} options={[{ value: '', label: 'None' }, ...(chapters.flatMap((ch) => ch.sections).find((sec) => sec.id === (item.sectionId || section?.id))?.subSections || []).map((sub) => ({ value: sub.id, label: `${sub.number} ${sub.title}` }))]} />
-            <Field label="Standard number" value={item.standardNumber} onChange={(value) => update({ standardNumber: value })} />
+            <Field label="Standard number" value={item.standardNumber} onChange={(value) => update({ standardNumber: value })} helperText={!item.id ? 'Auto-suggested — adjust if needed' : undefined} />
             <Field label="Reference ID" value={item.refId} onChange={(value) => update({ refId: value })} />
             <Field label="Points" type="number" value={item.points} onChange={(value) => update({ points: value })} />
             <label className="flex h-10 items-center gap-2 self-end rounded-md border border-slate-200 bg-slate-50 px-3 text-sm font-bold text-slate-700">
@@ -935,11 +966,18 @@ function EditForm({
   );
 }
 
-function Field({ label, value, onChange, type = 'text', wide }: { label: string; value: unknown; onChange: (value: string) => void; type?: string; wide?: boolean }) {
+function Field({ label, value, onChange, type = 'text', wide, disabled, helperText }: { label: string; value: unknown; onChange: (value: string) => void; type?: string; wide?: boolean; disabled?: boolean; helperText?: string }) {
   return (
     <label className={cn('block', wide && 'sm:col-span-2')}>
       <span className="mb-1 block text-xs font-bold uppercase tracking-widest text-slate-400">{label}</span>
-      <input type={type} value={textValue(value)} onChange={(event) => onChange(event.target.value)} className={inputClass()} />
+      <input
+        type={type}
+        value={textValue(value)}
+        onChange={(event) => onChange(event.target.value)}
+        disabled={disabled}
+        className={cn(inputClass(), disabled && 'cursor-not-allowed bg-slate-50 text-slate-500')}
+      />
+      {helperText && <span className="mt-1 block text-xs font-medium text-slate-400">{helperText}</span>}
     </label>
   );
 }

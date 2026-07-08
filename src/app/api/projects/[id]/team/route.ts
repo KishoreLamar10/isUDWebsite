@@ -265,19 +265,12 @@ export async function DELETE(
     const { id: projectId } = await params;
     const userId = (session.user as any).id;
     const systemRole = (session.user as any).role;
+    const email = session.user.email?.toLowerCase();
     const { searchParams } = new URL(req.url);
     const memberId = searchParams.get('memberId');
 
     if (!memberId) {
       return NextResponse.json({ error: 'memberId is required' }, { status: 400 });
-    }
-
-    const access = await getProjectAccess(projectId, userId, systemRole);
-    if (!access) {
-      return NextResponse.json({ error: 'Project not found or access denied' }, { status: 404 });
-    }
-    if (!access.canEdit) {
-      return NextResponse.json({ error: 'Unauthorized: missing team edit permissions' }, { status: 403 });
     }
 
     const member = await prisma.teamMember.findFirst({
@@ -289,6 +282,20 @@ export async function DELETE(
 
     if (!member) {
       return NextResponse.json({ error: 'Team member not found' }, { status: 404 });
+    }
+
+    // Self-decline: a pending invitee can remove their own invitation without
+    // needing team-edit permissions, since they don't have any access yet.
+    const isSelfDecline = member.status === 'PENDING' && email && member.email === email;
+
+    if (!isSelfDecline) {
+      const access = await getProjectAccess(projectId, userId, systemRole);
+      if (!access) {
+        return NextResponse.json({ error: 'Project not found or access denied' }, { status: 404 });
+      }
+      if (!access.canEdit) {
+        return NextResponse.json({ error: 'Unauthorized: missing team edit permissions' }, { status: 403 });
+      }
     }
 
     await prisma.teamMember.delete({

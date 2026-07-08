@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
-import { Search, Plus, Info, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Plus, Info, ChevronLeft, ChevronRight, AlertTriangle, Check, X, Loader2 } from 'lucide-react';
 import { useCallback, useMemo, useState, useEffect } from 'react';
 import { getCached, setCached } from '@/lib/clientCache';
 
@@ -57,8 +57,10 @@ export default function ProjectTable() {
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState('date');
   const [filterBy, setFilterBy] = useState('ALL');
+  const [ownershipFilter, setOwnershipFilter] = useState<'ALL' | 'MINE' | 'SHARED'>('ALL');
   const [query, setQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [processingInviteId, setProcessingInviteId] = useState<string | null>(null);
   const PROJECTS_PER_PAGE = 25;
 
   const fetchProjects = useCallback(async () => {
@@ -93,7 +95,35 @@ export default function ProjectTable() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [query, filterBy, sortBy]);
+  }, [query, filterBy, sortBy, ownershipFilter]);
+
+  const handleAcceptInvite = async (projectId: string) => {
+    setProcessingInviteId(projectId);
+    try {
+      const res = await fetch(`/api/projects/${projectId}/team`, { method: 'PATCH' });
+      if (res.ok) {
+        window.dispatchEvent(new CustomEvent('team-invitation-accepted', { detail: { projectId } }));
+        await fetchProjects();
+      }
+    } catch (error) {
+      console.error('Error accepting invitation:', error);
+    } finally {
+      setProcessingInviteId(null);
+    }
+  };
+
+  const handleDeclineInvite = async (projectId: string, memberId: string) => {
+    if (!window.confirm('Decline this project invitation?')) return;
+    setProcessingInviteId(projectId);
+    try {
+      const res = await fetch(`/api/projects/${projectId}/team?memberId=${memberId}`, { method: 'DELETE' });
+      if (res.ok) await fetchProjects();
+    } catch (error) {
+      console.error('Error declining invitation:', error);
+    } finally {
+      setProcessingInviteId(null);
+    }
+  };
 
   const isEmpty = projects.length === 0;
   const visibleProjects = useMemo(() => {
@@ -102,13 +132,17 @@ export default function ProjectTable() {
     return projects
       .filter((project) => {
         const statusMatch = filterBy === 'ALL' || project.status === filterBy;
+        const ownershipMatch =
+          ownershipFilter === 'ALL' ||
+          (ownershipFilter === 'MINE' && project.relationship === 'owner') ||
+          (ownershipFilter === 'SHARED' && (project.relationship === 'shared' || project.relationship === 'pending'));
         const searchMatch =
           !search ||
           project.projectName?.toLowerCase().includes(search) ||
           project.ownerName?.toLowerCase().includes(search) ||
           String(project.projectNumber || '').includes(search);
 
-        return statusMatch && searchMatch;
+        return statusMatch && ownershipMatch && searchMatch;
       })
       .sort((a, b) => {
         if (sortBy === 'name') return (a.projectName || '').localeCompare(b.projectName || '');
@@ -119,7 +153,7 @@ export default function ProjectTable() {
         }
         return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
       });
-  }, [projects, filterBy, query, sortBy]);
+  }, [projects, filterBy, ownershipFilter, query, sortBy]);
 
   const totalPages = Math.ceil(visibleProjects.length / PROJECTS_PER_PAGE);
   const paginatedProjects = useMemo(() => {
@@ -173,8 +207,28 @@ export default function ProjectTable() {
     <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
       
       {/* Page Title Bar */}
-      <div className="bg-white border border-slate-200 rounded-sm px-6 py-4 flex items-center shadow-sm">
+      <div className="bg-white border border-slate-200 rounded-sm px-6 py-4 flex flex-wrap items-center justify-between gap-4 shadow-sm">
         <h1 className="text-xl font-bold text-primary tracking-tight">My Projects</h1>
+        <div className="flex items-center gap-1 rounded-sm border border-slate-200 bg-slate-50 p-1">
+          {([
+            { value: 'ALL', label: 'All Projects' },
+            { value: 'MINE', label: 'My Projects' },
+            { value: 'SHARED', label: 'Shared Projects' },
+          ] as const).map((tab) => (
+            <button
+              key={tab.value}
+              type="button"
+              onClick={() => setOwnershipFilter(tab.value)}
+              className={`rounded-sm px-4 py-2 text-xs font-bold uppercase tracking-widest transition-all ${
+                ownershipFilter === tab.value
+                  ? 'bg-primary text-white shadow-sm'
+                  : 'text-slate-500 hover:bg-white hover:text-primary'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Controls Bar */}
@@ -300,37 +354,69 @@ export default function ProjectTable() {
             <div className="overflow-x-auto">
               <div className="min-w-[900px] divide-y divide-slate-100">
                 {paginatedProjects.map((project) => (
-                  <div
-                    key={project.id}
-                    className={`grid ${tableColumnClass} min-h-[72px] items-center hover:bg-slate-50/50 transition-colors group`}
-                  >
-                      <div className="px-6 py-3 text-xs font-mono text-slate-400 text-center">
-                        #{project.projectNumber ?? project.id.slice(0, 8)}
-                      </div>
-                      <div className="px-6 py-3 text-sm font-bold text-center">
-                        <Link href={`/projects/${project.id}`} className="text-slate-800 hover:text-secondary transition-colors underline-offset-2 hover:underline">
-                          {project.projectName}
-                        </Link>
-                      </div>
-                      <div className="px-6 py-3 text-sm text-slate-600 text-center">
-                        {project.ownerName || 'N/A'}
-                      </div>
-                      <div className="px-6 py-3 text-center">
-                        <span className={`inline-flex px-3 py-1 rounded-full text-[10px] font-bold tracking-widest uppercase ${
-                          project.status === 'COMPLETED' ? 'bg-green-100 text-green-700' :
-                          project.status === 'IN_REVIEW' ? 'bg-slate-200 text-slate-700' :
-                          project.status === 'ONGOING' ? 'bg-blue-100 text-blue-700' :
-                          'bg-slate-100 text-slate-600'
-                        }`}>
-                          {projectStatusLabels[project.status] || project.status.replace('_', ' ')}
-                        </span>
-                      </div>
-                      <div className="px-6 py-3 text-center">
-                        <div className="mx-auto flex h-11 w-11 items-center justify-center">
-                          <ScoreCircle score={project.scorePercentage ?? ((project.totalEarned || project.score || 0) + (project.bonus || 0))} />
+                  project.relationship === 'pending' ? (
+                    <div key={project.id} className="flex flex-wrap items-center justify-between gap-4 bg-amber-50/60 px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <AlertTriangle size={18} className="shrink-0 text-amber-600" aria-hidden="true" />
+                        <div>
+                          <p className="text-sm font-bold text-slate-800">{project.projectName}</p>
+                          <p className="text-xs font-medium text-amber-700">Pending invitation &mdash; accept or decline to continue</p>
                         </div>
                       </div>
-                  </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleAcceptInvite(project.id)}
+                          disabled={processingInviteId === project.id}
+                          className="flex items-center gap-1.5 rounded-full bg-secondary px-4 py-1.5 text-xs font-bold text-white transition-all hover:bg-[#92400e] disabled:opacity-50"
+                        >
+                          {processingInviteId === project.id ? <Loader2 size={14} className="animate-spin" aria-hidden="true" /> : <Check size={14} aria-hidden="true" />}
+                          Accept
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeclineInvite(project.id, project.pendingMemberId)}
+                          disabled={processingInviteId === project.id}
+                          className="flex items-center gap-1.5 rounded-full border border-slate-300 bg-white px-4 py-1.5 text-xs font-bold text-slate-600 transition-all hover:bg-slate-50 disabled:opacity-50"
+                        >
+                          <X size={14} aria-hidden="true" />
+                          Decline
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div
+                      key={project.id}
+                      className={`grid ${tableColumnClass} min-h-[72px] items-center hover:bg-slate-50/50 transition-colors group`}
+                    >
+                        <div className="px-6 py-3 text-xs font-mono text-slate-400 text-center">
+                          #{project.projectNumber ?? project.id.slice(0, 8)}
+                        </div>
+                        <div className="px-6 py-3 text-sm font-bold text-center">
+                          <Link href={`/projects/${project.id}`} className="text-slate-800 hover:text-secondary transition-colors underline-offset-2 hover:underline">
+                            {project.projectName}
+                          </Link>
+                        </div>
+                        <div className="px-6 py-3 text-sm text-slate-600 text-center">
+                          {project.ownerName || 'N/A'}
+                        </div>
+                        <div className="px-6 py-3 text-center">
+                          <span className={`inline-flex px-3 py-1 rounded-full text-[10px] font-bold tracking-widest uppercase ${
+                            project.status === 'COMPLETED' ? 'bg-green-100 text-green-700' :
+                            project.status === 'IN_REVIEW' ? 'bg-slate-200 text-slate-700' :
+                            project.status === 'ONGOING' ? 'bg-blue-100 text-blue-700' :
+                            'bg-slate-100 text-slate-600'
+                          }`}>
+                            {projectStatusLabels[project.status] || project.status.replace('_', ' ')}
+                          </span>
+                        </div>
+                        <div className="px-6 py-3 text-center">
+                          <div className="mx-auto flex h-11 w-11 items-center justify-center">
+                            <ScoreCircle score={project.scorePercentage ?? ((project.totalEarned || project.score || 0) + (project.bonus || 0))} />
+                          </div>
+                        </div>
+                    </div>
+                  )
                 ))}
               </div>
             </div>

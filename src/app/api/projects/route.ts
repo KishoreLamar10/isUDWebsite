@@ -135,6 +135,7 @@ export async function GET() {
 
     const userId = (session.user as any).id;
     const systemRole = (session.user as any).role;
+    const email = session.user.email?.toLowerCase();
 
     const projects = await prisma.project.findMany({
       where: systemRole === 'ADMIN'
@@ -144,12 +145,12 @@ export async function GET() {
               { userId },
               {
                 teamMembers: {
-                  some: {
-                    userId,
-                    status: 'ACTIVE',
-                  },
+                  some: { userId, status: 'ACTIVE' },
                 },
               },
+              ...(email
+                ? [{ teamMembers: { some: { email, status: 'PENDING' as const } } }]
+                : []),
             ],
           },
       orderBy: {
@@ -158,6 +159,9 @@ export async function GET() {
       include: {
         responses: true,
         sectionToggles: true,
+        teamMembers: {
+          where: email ? { OR: [{ userId }, { email }] } : { userId },
+        },
       },
     });
 
@@ -177,6 +181,15 @@ export async function GET() {
           ? ((scores.totalScore + scores.totalBonus) / totalAvailable) * 100
           : 0;
 
+      const membership = project.teamMembers[0];
+      const relationship = project.userId === userId
+        ? 'owner'
+        : membership?.status === 'ACTIVE'
+          ? 'shared'
+          : membership?.status === 'PENDING'
+            ? 'pending'
+            : 'other';
+
       return {
         ...project,
         score: totalEarned,
@@ -184,8 +197,11 @@ export async function GET() {
         totalAvailable,
         bonus,
         scorePercentage,
+        relationship,
+        pendingMemberId: relationship === 'pending' ? membership!.id : undefined,
         responses: undefined,
         sectionToggles: undefined,
+        teamMembers: undefined,
       };
     });
 

@@ -16,6 +16,7 @@ export async function GET() {
       lastName: true,
       email: true,
       systemRole: true,
+      lastLoginAt: true,
       projects: {
         select: { id: true },
       },
@@ -30,6 +31,7 @@ export async function GET() {
     name: `${user.firstName} ${user.lastName}`.trim(),
     email: user.email,
     systemRole: user.systemRole,
+    lastLoginAt: user.lastLoginAt,
     projectCount: user.projects.length,
     membershipCount: user.projectMemberships.length,
   })));

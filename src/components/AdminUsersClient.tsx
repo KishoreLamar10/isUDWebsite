@@ -9,9 +9,21 @@ type AdminUser = {
   name: string;
   email: string;
   systemRole: string;
+  lastLoginAt: string | null;
   projectCount: number;
   membershipCount: number;
 };
+
+function formatLastLogin(value: string | null) {
+  if (!value) return 'Never';
+  return new Date(value).toLocaleString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+}
 
 export default function AdminUsersClient() {
   const [users, setUsers] = useState<AdminUser[]>([]);
@@ -109,6 +121,7 @@ export default function AdminUsersClient() {
                   <th className="px-4 py-3">Role</th>
                   <th className="px-4 py-3">Projects</th>
                   <th className="px-4 py-3">Teams</th>
+                  <th className="px-4 py-3">Last Signed In</th>
                   <th className="px-4 py-3 text-right">Actions</th>
                 </tr>
               </thead>
@@ -125,6 +138,9 @@ export default function AdminUsersClient() {
                     <td className="px-4 py-3 font-semibold text-slate-600">{user.systemRole}</td>
                     <td className="px-4 py-3 font-semibold text-slate-600">{user.projectCount}</td>
                     <td className="px-4 py-3 font-semibold text-slate-600">{user.membershipCount}</td>
+                    <td className={`px-4 py-3 font-semibold ${user.lastLoginAt ? 'text-slate-600' : 'text-slate-400 italic'}`}>
+                      {formatLastLogin(user.lastLoginAt)}
+                    </td>
                     <td className="px-4 py-3 text-right">
                       <button
                         type="button"

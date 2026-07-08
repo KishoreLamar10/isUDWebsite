@@ -23,6 +23,7 @@ model User {
   hashedSecurityAnswer String
   mustSetSecurityQuestion Boolean @default(false)
   systemRole           SystemRole @default(USER)
+  lastLoginAt          DateTime?
   createdAt            DateTime   @default(now())
   updatedAt            DateTime   @updatedAt
   accounts             Account[]

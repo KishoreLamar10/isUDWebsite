@@ -269,10 +269,10 @@ export default function ProjectOverview({ id: propId }: { id?: string }) {
             <div className="space-y-2 text-sm">
               <p><span className="font-bold text-slate-700">Title:</span> {project.projectName}</p>
               <p><span className="font-bold text-slate-700">Address:</span> {project.address1 || '-'}</p>
-              <p className="text-secondary font-bold">City: <span className="text-slate-800 font-normal">{project.city || '-'}</span></p>
-              <p className="text-secondary font-bold">State: <span className="text-slate-800 font-normal">{project.state || '-'}</span></p>
+              <p><span className="font-bold text-slate-700">City:</span> {project.city || '-'}</p>
+              <p><span className="font-bold text-slate-700">State:</span> {project.state || '-'}</p>
               <p><span className="font-bold text-slate-700">Country:</span> {project.country}</p>
-              <p className="text-secondary font-bold">ZIP Code: <span className="text-slate-800 font-normal">{project.zip || '-'}</span></p>
+              <p><span className="font-bold text-slate-700">ZIP Code:</span> {project.zip || '-'}</p>
               <p><span className="font-bold text-slate-700">Site Area:</span> {project.siteArea || '0'} acres</p>
               <p><span className="font-bold text-slate-700">Building Area:</span> {project.buildingArea || '0'} sq.ft.</p>
             </div>

@@ -25,15 +25,42 @@ export default function LoginForm() {
   const [recoveryStep, setRecoveryStep] = useState<'email' | 'question'>('email');
   const [securityQuestion, setSecurityQuestion] = useState('');
   const [securityAnswer, setSecurityAnswer] = useState('');
+  const [resendingVerification, setResendingVerification] = useState(false);
+
+  const isUnverifiedError = Boolean(error?.toLowerCase().includes('verify your email'));
 
   useEffect(() => {
     if (searchParams.get('registered')) {
-      setSuccess('Account created successfully! Please login.');
+      setSuccess('Account created! Check your email for a verification link before logging in.');
+    }
+    if (searchParams.get('verified')) {
+      setSuccess('Your email has been verified. Please log in.');
+    }
+    if (searchParams.get('verifyError')) {
+      setError('That verification link is invalid or expired. Request a new one below.');
     }
     if (searchParams.get('error')) {
       setError('An error occurred during authentication.');
     }
   }, [searchParams]);
+
+  const handleResendVerification = async () => {
+    setResendingVerification(true);
+    setError(null);
+    try {
+      const response = await fetch('/api/user/verify-email/resend', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      const data = await response.json();
+      setSuccess(data.message || 'If an unverified account exists for that email, a new verification link has been sent.');
+    } catch {
+      setError('Unable to resend verification email. Please try again.');
+    } finally {
+      setResendingVerification(false);
+    }
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -155,8 +182,18 @@ export default function LoginForm() {
       <h2 className="text-2xl font-bold text-primary tracking-tight">Login to Existing Account</h2>
 
       {error && (
-        <div role="alert" className="p-4 bg-red-50 border-l-4 border-red-500 text-red-700 text-sm font-medium rounded-r-md">
-          {error}
+        <div role="alert" className="p-4 bg-red-50 border-l-4 border-red-500 text-red-700 text-sm font-medium rounded-r-md space-y-2">
+          <p>{error}</p>
+          {isUnverifiedError && (
+            <button
+              type="button"
+              onClick={handleResendVerification}
+              disabled={resendingVerification || !email}
+              className="font-bold underline underline-offset-2 disabled:opacity-50"
+            >
+              {resendingVerification ? 'Sending...' : 'Resend verification email'}
+            </button>
+          )}
         </div>
       )}
 
@@ -346,7 +383,7 @@ export default function LoginForm() {
       {/* Mini Footer/Notice */}
       <p className="text-[10px] text-muted text-center pt-8 leading-relaxed italic">
         By signing in, you agree to the <span className="underline">Terms of Service</span> and <span className="underline">Privacy Policy</span><br />
-        © 2024 isUD. All rights reserved
+        © {new Date().getFullYear()} isUD. All rights reserved
       </p>
     </div>
   );

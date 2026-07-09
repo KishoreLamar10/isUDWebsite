@@ -337,7 +337,7 @@ export default function UserGuidePage() {
 
       <div className="bg-white border border-slate-200 rounded-sm shadow-sm overflow-hidden p-6 sm:p-10 space-y-8">
         <div className="space-y-4">
-          <p className="text-slate-600 leading-relaxed text-[15px] max-w-4xl">
+          <p className="text-slate-600 leading-relaxed text-[15px]">
             This guide explains how the isUD Wishlist and isUD Certification scoring system works. 
             The scoring and credits may sound complicated, but the good news is that website does 
             all the math for you and you do not need to do it alone. 

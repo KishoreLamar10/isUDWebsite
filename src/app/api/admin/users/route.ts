@@ -17,6 +17,7 @@ export async function GET() {
       email: true,
       systemRole: true,
       lastLoginAt: true,
+      emailVerified: true,
       projects: {
         select: { id: true },
       },
@@ -32,6 +33,7 @@ export async function GET() {
     email: user.email,
     systemRole: user.systemRole,
     lastLoginAt: user.lastLoginAt,
+    emailVerified: user.emailVerified,
     projectCount: user.projects.length,
     membershipCount: user.projectMemberships.length,
   })));
@@ -92,5 +94,28 @@ export async function POST(req: Request) {
   } catch (error: any) {
     console.error('[ADMIN_SEND_PASSWORD_SETUP_ERROR]', error);
     return NextResponse.json({ error: error?.message || 'Unable to send password setup email' }, { status: 500 });
+  }
+}
+
+export async function PATCH(req: Request) {
+  const { error } = await requireAdminSession();
+  if (error) return error;
+
+  try {
+    const { userId } = await req.json();
+    if (!userId) {
+      return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
+    }
+
+    const user = await prisma.user.update({
+      where: { id: userId },
+      data: { emailVerified: new Date() },
+      select: { id: true, emailVerified: true },
+    });
+
+    return NextResponse.json(user);
+  } catch (error: any) {
+    console.error('[ADMIN_VERIFY_USER_ERROR]', error);
+    return NextResponse.json({ error: error?.message || 'Unable to verify user' }, { status: 500 });
   }
 }

@@ -37,6 +37,10 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Invalid password");
         }
 
+        if (!user.emailVerified) {
+          throw new Error("Please verify your email before logging in. Check your inbox for the verification link, or request a new one.");
+        }
+
         await prisma.user.update({
           where: { id: user.id },
           data: { lastLoginAt: new Date() },

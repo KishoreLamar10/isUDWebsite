@@ -24,6 +24,7 @@ model User {
   mustSetSecurityQuestion Boolean @default(false)
   systemRole           SystemRole @default(USER)
   lastLoginAt          DateTime?
+  emailVerified        DateTime?
   createdAt            DateTime   @default(now())
   updatedAt            DateTime   @updatedAt
   accounts             Account[]
@@ -31,6 +32,7 @@ model User {
   sessions             Session[]
   projectMemberships   TeamMember[]
   passwordResetTokens   PasswordResetToken[]
+  emailVerificationTokens EmailVerificationToken[]
 }
 
 model Account {
@@ -68,6 +70,18 @@ model VerificationToken {
 }
 
 model PasswordResetToken {
+  id        String   @id @default(uuid())
+  tokenHash String   @unique
+  userId    String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, usedAt])
+}
+
+model EmailVerificationToken {
   id        String   @id @default(uuid())
   tokenHash String   @unique
   userId    String

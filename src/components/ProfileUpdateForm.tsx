@@ -141,7 +141,7 @@ export default function ProfileUpdateForm() {
 
         <div className="max-w-4xl mx-auto px-8 mt-12 mb-20 text-center">
             <p className="text-sm text-slate-600 mb-12">
-                By saving your profile, you agree to the <Link href="/terms" className="text-[#005ebb] hover:underline">Terms of Service</Link> and <Link href="/privacy" className="text-[#005ebb] hover:underline">Privacy Policy</Link> © 2024 University at Buffalo. All rights reserved.
+                By saving your profile, you agree to the <Link href="/terms" className="text-[#005ebb] hover:underline">Terms of Service</Link> and <Link href="/privacy" className="text-[#005ebb] hover:underline">Privacy Policy</Link> © {new Date().getFullYear()} University at Buffalo. All rights reserved.
             </p>
 
             <div className="max-w-xl mx-auto text-left">

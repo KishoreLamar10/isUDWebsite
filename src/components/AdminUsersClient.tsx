@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Loader2, Mail, Search, Send } from 'lucide-react';
+import { Loader2, Mail, Search, Send, ShieldCheck, ShieldAlert } from 'lucide-react';
 import Breadcrumbs from '@/components/ui/Breadcrumbs';
 
 type AdminUser = {
@@ -10,6 +10,7 @@ type AdminUser = {
   email: string;
   systemRole: string;
   lastLoginAt: string | null;
+  emailVerified: string | null;
   projectCount: number;
   membershipCount: number;
 };
@@ -30,6 +31,7 @@ export default function AdminUsersClient() {
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [sendingId, setSendingId] = useState('');
+  const [verifyingId, setVerifyingId] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
@@ -77,6 +79,27 @@ export default function AdminUsersClient() {
       setError(err.message || 'Unable to send setup email');
     } finally {
       setSendingId('');
+    }
+  }
+
+  async function verifyUser(user: AdminUser) {
+    setVerifyingId(user.id);
+    setMessage('');
+    setError('');
+    try {
+      const response = await fetch('/api/admin/users', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Unable to verify user');
+      setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, emailVerified: data.emailVerified } : u)));
+      setMessage(`${user.email} marked as verified.`);
+    } catch (err: any) {
+      setError(err.message || 'Unable to verify user');
+    } finally {
+      setVerifyingId('');
     }
   }
 
@@ -134,6 +157,10 @@ export default function AdminUsersClient() {
                         <Mail className="h-3.5 w-3.5" />
                         {user.email}
                       </div>
+                      <div className={`mt-1 flex items-center gap-1 text-[11px] font-bold uppercase tracking-wide ${user.emailVerified ? 'text-emerald-600' : 'text-amber-600'}`}>
+                        {user.emailVerified ? <ShieldCheck className="h-3 w-3" /> : <ShieldAlert className="h-3 w-3" />}
+                        {user.emailVerified ? 'Verified' : 'Unverified'}
+                      </div>
                     </td>
                     <td className="px-4 py-3 font-semibold text-slate-600">{user.systemRole}</td>
                     <td className="px-4 py-3 font-semibold text-slate-600">{user.projectCount}</td>
@@ -142,15 +169,28 @@ export default function AdminUsersClient() {
                       {formatLastLogin(user.lastLoginAt)}
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <button
-                        type="button"
-                        onClick={() => sendSetupEmail(user)}
-                        disabled={Boolean(sendingId)}
-                        className="inline-flex h-9 items-center gap-2 rounded-md bg-primary px-3 text-xs font-bold text-white hover:bg-[#001d3d] disabled:bg-slate-300"
-                      >
-                        {sendingId === user.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                        Send setup email
-                      </button>
+                      <div className="flex justify-end gap-2">
+                        {!user.emailVerified && (
+                          <button
+                            type="button"
+                            onClick={() => verifyUser(user)}
+                            disabled={Boolean(verifyingId)}
+                            className="inline-flex h-9 items-center gap-2 rounded-md border border-emerald-200 bg-emerald-50 px-3 text-xs font-bold text-emerald-700 hover:bg-emerald-100 disabled:opacity-50"
+                          >
+                            {verifyingId === user.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
+                            Verify
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => sendSetupEmail(user)}
+                          disabled={Boolean(sendingId)}
+                          className="inline-flex h-9 items-center gap-2 rounded-md bg-primary px-3 text-xs font-bold text-white hover:bg-[#001d3d] disabled:bg-slate-300"
+                        >
+                          {sendingId === user.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                          Send setup email
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}

@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { checkRateLimit, getRequestIp, hashRateLimitKey } from "@/lib/rateLimit";
+import { createEmailVerificationToken, sendVerificationEmail } from "@/lib/emailVerification";
+import { getBaseUrl } from "@/lib/passwordSetupEmail";
 
 export async function POST(req: Request) {
   try {
@@ -84,6 +86,20 @@ export async function POST(req: Request) {
         },
       });
     });
+
+    // Best-effort: don't fail registration if the verification email can't be
+    // sent. The user can request a new one from the login page.
+    try {
+      const token = await createEmailVerificationToken(user.id);
+      const verifyUrl = `${getBaseUrl()}/api/user/verify-email?token=${token}`;
+      await sendVerificationEmail({
+        email: user.email,
+        name: `${user.firstName} ${user.lastName}`.trim(),
+        verifyUrl,
+      });
+    } catch (emailError) {
+      console.error("[REGISTRATION_VERIFICATION_EMAIL_ERROR]", emailError);
+    }
 
     // Strip sensitive fields before returning
     const { hashedPassword: _, hashedSecurityAnswer: __, ...userWithoutSecrets } = user;

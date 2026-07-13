@@ -51,6 +51,11 @@ export default function ChecklistPage({ params }: { params: Promise<Params> }) {
   const [activeChapterId, setActiveChapterId] = useState<string>(cachedPayload?.chapters?.[0]?.id || '');
   const [allPhases, setAllPhases] = useState<any[]>(cachedPayload?.allPhases || []);
   const [allGoals, setAllGoals] = useState<any[]>(cachedPayload?.allGoals || []);
+  const chapterScrollRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    chapterScrollRef.current?.scrollTo({ top: 0 });
+  }, [activeChapterId]);
 
   // Local state for edits
   const [responses, setResponses] = useState<Record<string, ResponseStatus>>(() => cachedPayload ? toResponseMap(cachedPayload.responses) : {});
@@ -401,7 +406,7 @@ export default function ChecklistPage({ params }: { params: Promise<Params> }) {
           }}
         />
 
-        <div className="flex-1 overflow-y-auto relative bg-[#f8fafc]">
+        <div ref={chapterScrollRef} className="flex-1 overflow-y-auto relative bg-[#f8fafc]">
           {activeChapter && (
             <ChecklistSectionList
               chapter={activeChapter}

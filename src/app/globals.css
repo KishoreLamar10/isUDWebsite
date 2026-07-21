@@ -29,6 +29,12 @@ body {
   }
 }
 
+/* Only ever visible while printing; otherwise its injected content would
+   sit on the page as a stray section once populated. */
+#checklist-print-root {
+  display: none;
+}
+
 @media print {
   /* Hide all body content, then selectively show the print root */
   body * { visibility: hidden !important; }

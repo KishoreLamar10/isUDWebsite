@@ -54,7 +54,7 @@ function getDisplayScore(project: any) {
   return project.scorePercentage ?? ((project.totalEarned || project.score || 0) + (project.bonus || 0));
 }
 
-const tableColumnClass = 'grid-cols-[minmax(280px,1.45fr)_minmax(220px,1fr)_160px_140px_120px]';
+const tableColumnClass = 'grid-cols-[minmax(240px,1fr)_minmax(200px,1fr)_150px_130px_120px]';
 const primaryLinkClass = 'inline-flex items-center justify-center gap-2 rounded-sm bg-primary px-5 py-3 text-sm font-bold uppercase tracking-widest text-white shadow-sm transition-all duration-200 hover:bg-[#002855] focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2 active:scale-95';
 const secondaryLinkClass = 'inline-flex items-center justify-center gap-2 rounded-sm bg-secondary px-5 py-3 text-sm font-bold uppercase tracking-widest text-white shadow-sm transition-all duration-200 hover:bg-[#92400e] focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2 active:scale-95';
 

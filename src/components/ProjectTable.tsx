@@ -45,6 +45,10 @@ function ScoreCircle({ score, size = 44 }: { score: number; size?: number }) {
   );
 }
 
+function getDisplayScore(project: any) {
+  return project.scorePercentage ?? ((project.totalEarned || project.score || 0) + (project.bonus || 0));
+}
+
 const tableColumnClass = 'grid-cols-[120px_minmax(280px,1.45fr)_minmax(220px,1fr)_180px_120px]';
 const primaryLinkClass = 'inline-flex items-center justify-center gap-2 rounded-sm bg-primary px-5 py-3 text-sm font-bold uppercase tracking-widest text-white shadow-sm transition-all duration-200 hover:bg-[#002855] focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2 active:scale-95';
 const secondaryLinkClass = 'inline-flex items-center justify-center gap-2 rounded-sm bg-secondary px-5 py-3 text-sm font-bold uppercase tracking-widest text-white shadow-sm transition-all duration-200 hover:bg-[#92400e] focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2 active:scale-95';
@@ -147,9 +151,9 @@ export default function ProjectTable() {
       .sort((a, b) => {
         if (sortBy === 'name') return (a.projectName || '').localeCompare(b.projectName || '');
         if (sortBy === 'score') {
-          const aScore = (a.totalEarned || a.score || 0) + (a.bonus || 0);
-          const bScore = (b.totalEarned || b.score || 0) + (b.bonus || 0);
-          return bScore - aScore;
+          // Sort by the same value shown in the score circle, not the raw
+          // credit total, since those can rank differently.
+          return getDisplayScore(b) - getDisplayScore(a);
         }
         return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
       });
@@ -412,7 +416,7 @@ export default function ProjectTable() {
                         </div>
                         <div className="px-6 py-3 text-center">
                           <div className="mx-auto flex h-11 w-11 items-center justify-center">
-                            <ScoreCircle score={project.scorePercentage ?? ((project.totalEarned || project.score || 0) + (project.bonus || 0))} />
+                            <ScoreCircle score={getDisplayScore(project)} />
                           </div>
                         </div>
                     </div>

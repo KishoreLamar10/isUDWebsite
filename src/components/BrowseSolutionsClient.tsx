@@ -51,6 +51,13 @@ function isDataImage(src: string) {
   return src.startsWith('data:image/');
 }
 
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
 export default function BrowseSolutionsClient({ chapters }: BrowseSolutionsClientProps) {
   const [activeChapterId, setActiveChapterId] = useState(chapters[0]?.id || '');
   const [activeSectionId, setActiveSectionId] = useState('');
@@ -87,6 +94,47 @@ export default function BrowseSolutionsClient({ chapters }: BrowseSolutionsClien
     { label: 'Browse Solutions' },
   ];
 
+  const handlePrint = () => {
+    const printRoot = document.getElementById('checklist-print-root');
+    if (!printRoot || !activeChapter) return;
+
+    printRoot.innerHTML = `
+      <div style="margin-bottom:24px;padding-bottom:16px;border-bottom:2px solid #e2e8f0;display:flex;align-items:center;gap:16px;">
+        <img src="/logo.png" style="height:36px;width:auto;" alt="isUD - Innovative solutions for Universal Design" />
+        <span style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;color:#64748b;">Innovative Solutions for Universal Design</span>
+      </div>
+      <div style="margin-bottom:20px;border-bottom:1px solid #e2e8f0;padding-bottom:8px;">
+        <span style="font-size:22px;font-weight:700;color:#1e293b;">${escapeHtml(activeChapter.number)}&nbsp;&nbsp;${escapeHtml(activeChapter.title)}</span>
+      </div>
+      ${selectedSections.map((section) => `
+        <div style="margin-bottom:24px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <strong style="font-size:15px;color:#003366;">${escapeHtml(activeChapter.number)}.${escapeHtml(section.number)} ${escapeHtml(section.title)}</strong>
+            <span style="font-size:11px;color:#64748b;font-weight:600;">${section.totalCredits} credits &middot; ${section.solutions.length} solutions</span>
+          </div>
+          ${section.solutions.map((solution) => `
+            <div style="margin-bottom:14px;padding:10px 12px;border:1px solid #e2e8f0;border-radius:4px;">
+              <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:4px;">
+                <span style="font-family:monospace;font-size:12px;font-weight:700;color:#B45309;">${escapeHtml(solution.standardNumber)}</span>
+                ${solution.isMandatory ? '<span style="font-size:10px;font-weight:700;text-transform:uppercase;color:#92400e;border:1px solid #fde68a;background:#fffbeb;padding:1px 6px;border-radius:3px;">Required</span>' : ''}
+                <span style="font-size:10px;font-weight:700;text-transform:uppercase;color:#64748b;background:#f1f5f9;padding:1px 6px;border-radius:3px;">${solution.points} pts</span>
+              </div>
+              <p style="font-size:13px;line-height:1.5;color:#334155;margin:0 0 6px;">${escapeHtml(solution.text)}</p>
+              ${solution.instruction ? `<p style="font-size:12px;line-height:1.5;color:#475569;margin:0 0 6px;"><strong>Instructions:</strong> ${escapeHtml(solution.instruction)}</p>` : ''}
+              <p style="font-size:11px;color:#64748b;margin:0;">
+                <strong>Goals:</strong> ${solution.goals.length ? solution.goals.map((g) => escapeHtml(g.text)).join(', ') : 'None listed'}
+                &nbsp;&middot;&nbsp;
+                <strong>Phases:</strong> ${solution.phases.length ? solution.phases.map((p) => escapeHtml(p.name)).join(', ') : 'None listed'}
+              </p>
+            </div>
+          `).join('')}
+        </div>
+      `).join('')}
+    `;
+
+    setTimeout(() => window.print(), 100);
+  };
+
   return (
     <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
       <Breadcrumbs items={breadcrumbItems} />
@@ -114,7 +162,7 @@ export default function BrowseSolutionsClient({ chapters }: BrowseSolutionsClien
             </label>
             <button
               type="button"
-              onClick={() => window.print()}
+              onClick={handlePrint}
               className="flex h-11 items-center justify-center gap-2 rounded-md bg-primary px-5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-[#001d3d] active:scale-[0.98]"
             >
               <Printer size={16} />

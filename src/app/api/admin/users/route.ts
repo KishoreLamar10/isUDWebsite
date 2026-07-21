@@ -97,14 +97,35 @@ export async function POST(req: Request) {
   }
 }
 
+const validSystemRoles = ['USER', 'ADMIN'];
+
 export async function PATCH(req: Request) {
-  const { error } = await requireAdminSession();
+  const { session, error } = await requireAdminSession();
   if (error) return error;
 
   try {
-    const { userId } = await req.json();
+    const { userId, action, role } = await req.json();
     if (!userId) {
       return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
+    }
+
+    if (action === 'setRole') {
+      if (!validSystemRoles.includes(role)) {
+        return NextResponse.json({ error: 'Invalid role' }, { status: 400 });
+      }
+
+      const adminId = (session?.user as any)?.id;
+      if (adminId && adminId === userId) {
+        return NextResponse.json({ error: 'You cannot change your own role.' }, { status: 400 });
+      }
+
+      const user = await prisma.user.update({
+        where: { id: userId },
+        data: { systemRole: role },
+        select: { id: true, systemRole: true },
+      });
+
+      return NextResponse.json(user);
     }
 
     const user = await prisma.user.update({
@@ -115,7 +136,7 @@ export async function PATCH(req: Request) {
 
     return NextResponse.json(user);
   } catch (error: any) {
-    console.error('[ADMIN_VERIFY_USER_ERROR]', error);
-    return NextResponse.json({ error: error?.message || 'Unable to verify user' }, { status: 500 });
+    console.error('[ADMIN_PATCH_USER_ERROR]', error);
+    return NextResponse.json({ error: error?.message || 'Unable to update user' }, { status: 500 });
   }
 }

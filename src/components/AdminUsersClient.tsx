@@ -1,8 +1,11 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { useSession } from 'next-auth/react';
 import { Loader2, Mail, Search, Send, ShieldCheck, ShieldAlert } from 'lucide-react';
 import Breadcrumbs from '@/components/ui/Breadcrumbs';
+
+const SYSTEM_ROLES = ['USER', 'ADMIN'] as const;
 
 type AdminUser = {
   id: string;
@@ -27,11 +30,14 @@ function formatLastLogin(value: string | null) {
 }
 
 export default function AdminUsersClient() {
+  const { data: session } = useSession();
+  const currentUserId = (session?.user as any)?.id as string | undefined;
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [sendingId, setSendingId] = useState('');
   const [verifyingId, setVerifyingId] = useState('');
+  const [updatingRoleId, setUpdatingRoleId] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
@@ -103,6 +109,30 @@ export default function AdminUsersClient() {
     }
   }
 
+  async function updateRole(user: AdminUser, role: string) {
+    if (role === user.systemRole) return;
+    if (!window.confirm(`Change ${user.email}'s role to ${role}?`)) return;
+
+    setUpdatingRoleId(user.id);
+    setMessage('');
+    setError('');
+    try {
+      const response = await fetch('/api/admin/users', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id, action: 'setRole', role }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Unable to update role');
+      setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, systemRole: data.systemRole } : u)));
+      setMessage(`${user.email}'s role changed to ${role}.`);
+    } catch (err: any) {
+      setError(err.message || 'Unable to update role');
+    } finally {
+      setUpdatingRoleId('');
+    }
+  }
+
   return (
     <div className="mx-auto w-full max-w-7xl space-y-5 px-4 py-6 sm:px-6 lg:px-8">
       <Breadcrumbs items={[{ label: 'My Projects', href: '/' }, { label: 'Admin Dashboard' }, { label: 'Users' }]} />
@@ -162,7 +192,19 @@ export default function AdminUsersClient() {
                         {user.emailVerified ? 'Verified' : 'Unverified'}
                       </div>
                     </td>
-                    <td className="px-4 py-3 font-semibold text-slate-600">{user.systemRole}</td>
+                    <td className="px-4 py-3 font-semibold text-slate-600">
+                      <select
+                        value={user.systemRole}
+                        onChange={(event) => updateRole(user, event.target.value)}
+                        disabled={Boolean(updatingRoleId) || user.id === currentUserId}
+                        title={user.id === currentUserId ? "You can't change your own role" : undefined}
+                        className="h-8 rounded-md border border-slate-200 bg-white px-2 text-xs font-bold uppercase tracking-wide text-slate-700 outline-none focus:border-secondary focus:ring-2 focus:ring-secondary/25 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {SYSTEM_ROLES.map((role) => (
+                          <option key={role} value={role}>{role}</option>
+                        ))}
+                      </select>
+                    </td>
                     <td className="px-4 py-3 font-semibold text-slate-600">{user.projectCount}</td>
                     <td className="px-4 py-3 font-semibold text-slate-600">{user.membershipCount}</td>
                     <td className={`px-4 py-3 font-semibold ${user.lastLoginAt ? 'text-slate-600' : 'text-slate-400 italic'}`}>

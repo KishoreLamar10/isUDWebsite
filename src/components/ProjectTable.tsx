@@ -302,8 +302,8 @@ export default function ProjectTable() {
       {/* Table Section */}
       <div className="bg-white border border-slate-200 rounded-sm shadow-sm overflow-hidden">
         <div className={`grid ${tableColumnClass} min-w-[900px] border-b border-slate-100 bg-slate-50/50`}>
-          {tableHeaders.map((header) => (
-            <div key={header} className="px-6 py-4 text-xs font-bold text-muted uppercase tracking-widest text-center">
+          {tableHeaders.map((header, index) => (
+            <div key={header} className={`px-6 py-4 text-xs font-bold text-muted uppercase tracking-widest ${index < 2 ? 'text-left' : 'text-center'}`}>
               {header}
             </div>
           ))}
@@ -398,12 +398,12 @@ export default function ProjectTable() {
                       key={project.id}
                       className={`grid ${tableColumnClass} min-h-[72px] items-center hover:bg-slate-50/50 transition-colors group`}
                     >
-                        <div className="px-6 py-3 text-sm font-bold text-center">
+                        <div className="px-6 py-3 text-sm font-bold text-left">
                           <Link href={`/projects/${project.id}`} className="text-slate-800 hover:text-secondary transition-colors underline-offset-2 hover:underline">
                             {project.projectName}
                           </Link>
                         </div>
-                        <div className="px-6 py-3 text-sm text-slate-600 text-center">
+                        <div className="px-6 py-3 text-sm text-slate-600 text-left">
                           {project.accountOwnerName || 'N/A'}
                         </div>
                         <div className="px-6 py-3 text-center">

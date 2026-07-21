@@ -162,6 +162,9 @@ export async function GET() {
         teamMembers: {
           where: email ? { OR: [{ userId }, { email }] } : { userId },
         },
+        user: {
+          select: { firstName: true, lastName: true, email: true },
+        },
       },
     });
 
@@ -190,6 +193,10 @@ export async function GET() {
             ? 'pending'
             : 'other';
 
+      const accountOwnerName = project.user
+        ? `${project.user.firstName} ${project.user.lastName}`.trim() || project.user.email
+        : null;
+
       return {
         ...project,
         score: totalEarned,
@@ -198,10 +205,12 @@ export async function GET() {
         bonus,
         scorePercentage,
         relationship,
+        accountOwnerName,
         pendingMemberId: relationship === 'pending' ? membership!.id : undefined,
         responses: undefined,
         sectionToggles: undefined,
         teamMembers: undefined,
+        user: undefined,
       };
     });
 

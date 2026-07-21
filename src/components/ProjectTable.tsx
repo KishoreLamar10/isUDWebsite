@@ -139,7 +139,7 @@ export default function ProjectTable() {
         const searchMatch =
           !search ||
           project.projectName?.toLowerCase().includes(search) ||
-          project.ownerName?.toLowerCase().includes(search) ||
+          project.accountOwnerName?.toLowerCase().includes(search) ||
           String(project.projectNumber || '').includes(search);
 
         return statusMatch && ownershipMatch && searchMatch;
@@ -398,7 +398,7 @@ export default function ProjectTable() {
                           </Link>
                         </div>
                         <div className="px-6 py-3 text-sm text-slate-600 text-center">
-                          {project.ownerName || 'N/A'}
+                          {project.accountOwnerName || 'N/A'}
                         </div>
                         <div className="px-6 py-3 text-center">
                           <span className={`inline-flex px-3 py-1 rounded-full text-[10px] font-bold tracking-widest uppercase ${

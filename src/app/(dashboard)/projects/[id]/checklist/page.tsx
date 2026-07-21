@@ -309,7 +309,7 @@ export default function ChecklistPage({ params }: { params: Promise<Params> }) {
           <ChevronRight className="w-4 h-4 opacity-40" />
           <Link href={`/projects/${id}`} onClick={(event) => !confirmNavigation() && event.preventDefault()} className="hover:text-primary transition-colors">Project Overview</Link>
           <ChevronRight className="w-4 h-4 opacity-40" />
-          <span className="font-bold text-slate-900">{isReadOnly ? 'View Checklist' : 'Edit Checklist'}</span>
+          <span className="font-bold text-slate-900">{isReadOnly ? 'View Solutions' : 'Edit Solutions'}</span>
           {isReadOnly && (
             <span className="ml-4 px-3 py-1 bg-slate-100 text-slate-500 text-[10px] font-bold uppercase tracking-widest rounded-full border border-slate-200">
               Read-Only Mode

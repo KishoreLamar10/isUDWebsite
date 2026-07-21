@@ -8,7 +8,12 @@ import { getCached, setCached } from '@/lib/clientCache';
 
 const PROJECTS_CACHE_KEY = 'projects:list';
 
-const tableHeaders = ['ID', 'Name', 'Owner', 'Status', 'Score'];
+const tableHeaders = ['Name', 'Owner', 'Status', 'Date', 'Score'];
+
+function formatProjectDate(value: string | null | undefined) {
+  if (!value) return '—';
+  return new Date(value).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+}
 
 const projectStatusLabels: Record<string, string> = {
   ONGOING: 'Ongoing',
@@ -49,7 +54,7 @@ function getDisplayScore(project: any) {
   return project.scorePercentage ?? ((project.totalEarned || project.score || 0) + (project.bonus || 0));
 }
 
-const tableColumnClass = 'grid-cols-[120px_minmax(280px,1.45fr)_minmax(220px,1fr)_180px_120px]';
+const tableColumnClass = 'grid-cols-[minmax(280px,1.45fr)_minmax(220px,1fr)_160px_140px_120px]';
 const primaryLinkClass = 'inline-flex items-center justify-center gap-2 rounded-sm bg-primary px-5 py-3 text-sm font-bold uppercase tracking-widest text-white shadow-sm transition-all duration-200 hover:bg-[#002855] focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2 active:scale-95';
 const secondaryLinkClass = 'inline-flex items-center justify-center gap-2 rounded-sm bg-secondary px-5 py-3 text-sm font-bold uppercase tracking-widest text-white shadow-sm transition-all duration-200 hover:bg-[#92400e] focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2 active:scale-95';
 
@@ -393,9 +398,6 @@ export default function ProjectTable() {
                       key={project.id}
                       className={`grid ${tableColumnClass} min-h-[72px] items-center hover:bg-slate-50/50 transition-colors group`}
                     >
-                        <div className="px-6 py-3 text-xs font-mono text-slate-400 text-center">
-                          #{project.projectNumber ?? project.id.slice(0, 8)}
-                        </div>
                         <div className="px-6 py-3 text-sm font-bold text-center">
                           <Link href={`/projects/${project.id}`} className="text-slate-800 hover:text-secondary transition-colors underline-offset-2 hover:underline">
                             {project.projectName}
@@ -413,6 +415,9 @@ export default function ProjectTable() {
                           }`}>
                             {projectStatusLabels[project.status] || project.status.replace('_', ' ')}
                           </span>
+                        </div>
+                        <div className="px-6 py-3 text-sm text-slate-600 text-center">
+                          {formatProjectDate(project.createdAt)}
                         </div>
                         <div className="px-6 py-3 text-center">
                           <div className="mx-auto flex h-11 w-11 items-center justify-center">

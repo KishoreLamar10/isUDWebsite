@@ -82,7 +82,7 @@ export default async function EditProjectPage({ params }: { params: Promise<{ id
   const breadcrumbItems = [
     { label: 'My Projects', href: '/' },
     { label: project.projectName, href: `/projects/${id}` },
-    { label: 'Edit Profile' },
+    { label: 'Edit Project Details' },
   ];
 
   return (
@@ -90,7 +90,7 @@ export default async function EditProjectPage({ params }: { params: Promise<{ id
       <Breadcrumbs items={breadcrumbItems} />
 
       <div className="bg-white border border-slate-200 rounded-sm px-6 py-4 flex items-center shadow-sm">
-        <h1 className="text-xl font-bold text-primary tracking-tight">Edit Project Profile</h1>
+        <h1 className="text-xl font-bold text-primary tracking-tight">Edit Project Details</h1>
       </div>
 
       <div className="bg-white border border-slate-200 rounded-sm shadow-sm overflow-hidden p-6 sm:p-8">

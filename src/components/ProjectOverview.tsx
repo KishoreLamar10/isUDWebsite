@@ -204,19 +204,19 @@ export default function ProjectOverview({ id: propId }: { id?: string }) {
         <div className="flex gap-3 flex-wrap">
           <Link href={`/projects/${id}/checklist`}>
             <Button variant="primary" className="gap-2 text-sm">
-              <ClipboardCheck size={16} /> {isReadOnly ? 'View Checklist' : 'Edit Checklist'}
+              <ClipboardCheck size={16} /> {isReadOnly ? 'View Checklist' : 'Edit Solutions'}
             </Button>
           </Link>
           {!isReadOnly && (
             <>
               <Link href={`/projects/${id}/edit`}>
                 <Button variant="primary" className="gap-2 text-sm">
-                  <Edit size={16} /> Edit Profile
+                  <Edit size={16} /> Edit Project Details
                 </Button>
               </Link>
               <Button
-                variant="primary"
-                className="gap-2 text-sm bg-slate-700 hover:bg-slate-800 disabled:bg-slate-400"
+                variant="secondary"
+                className="gap-2 text-sm disabled:bg-slate-400"
                 disabled={!canSubmitProject || isSubmittingProject}
                 title={submitTitle}
                 aria-disabled={!canSubmitProject}

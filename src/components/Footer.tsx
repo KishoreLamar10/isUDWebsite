@@ -56,7 +56,7 @@ export default function Footer() {
               <p>Center for Inclusive Design and Environmental Access</p>
               <p>School of Architecture and Planning</p>
             </div>
-            <p>Copyright 2026. All rights reserved.</p>
+            <p>Copyright {new Date().getFullYear()}. All rights reserved.</p>
             <div className="flex flex-wrap gap-x-6 gap-y-2 uppercase tracking-wider">
               <Link href="/accessibility" className="hover:text-secondary">Accessibility</Link>
               <Link href="/terms" className="hover:text-secondary">Terms of Use</Link>

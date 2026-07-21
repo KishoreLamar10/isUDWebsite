@@ -29,6 +29,34 @@ body {
   }
 }
 
+/* Keep scrollbars visible by default instead of relying on the browser's
+   hover-to-reveal overlay behavior, which made scrollable panels look
+   like they had no more content. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: #cbd5e1;
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background-color: #94a3b8;
+}
+
 /* Only ever visible while printing; otherwise its injected content would
    sit on the page as a stray section once populated. */
 #checklist-print-root {

@@ -376,7 +376,7 @@ export default function ChecklistPage({ params }: { params: Promise<Params> }) {
           </button>
 
           {!isReadOnly && (
-            <div role="status" aria-live="polite" className={`flex h-12 items-center gap-2 rounded-md px-5 text-sm font-bold ${
+            <div role="status" aria-live="polite" className={`flex h-12 min-w-[150px] items-center justify-center gap-2 rounded-md px-5 text-sm font-bold ${
               saveError
                 ? 'bg-red-50 text-red-700 border border-red-100'
                 : saving

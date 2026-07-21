@@ -355,7 +355,9 @@ export default function ProjectProfileForm({
                <div className="space-y-1">
                   <div className="flex items-center gap-1">
                     <label className="text-sm font-medium text-slate-600">Building Area</label>
-                    <HelpCircle size={14} className="text-red-400 rotate-180" />
+                    <span title="The total habitable floor area of the building, in square feet.">
+                      <HelpCircle size={14} className="text-slate-400" />
+                    </span>
                   </div>
                   <div className="flex">
                     <input type="text" name="buildingArea" value={formData.buildingArea} onChange={handleInputChange} placeholder="sq. ft" className="w-full border border-slate-300 rounded px-4 py-2 text-sm focus:ring-2 focus:ring-secondary outline-none" />
@@ -364,7 +366,9 @@ export default function ProjectProfileForm({
                <div className="space-y-1">
                   <div className="flex items-center gap-1">
                     <label className="text-sm font-medium text-slate-600">Site Area</label>
-                    <HelpCircle size={14} className="text-red-400 rotate-180" />
+                    <span title="The total area of the project site, in acres.">
+                      <HelpCircle size={14} className="text-slate-400" />
+                    </span>
                   </div>
                   <div className="flex">
                     <input type="text" name="siteArea" value={formData.siteArea} onChange={handleInputChange} placeholder="acres" className="w-full border border-slate-300 rounded px-4 py-2 text-sm focus:ring-2 focus:ring-secondary outline-none" />

@@ -936,8 +936,8 @@ function EditForm({
           </div>
           <TextArea label="Solution text" value={item.text} onChange={(value) => update({ text: value })} minHeightClass="min-h-44" />
           <TextArea label="Instruction" value={item.instruction} onChange={(value) => update({ instruction: value })} minHeightClass="min-h-36" />
-          <CheckboxGroup label="Goals" values={(item.goalIds || []) as string[]} options={goals.map((goal) => ({ value: goal.id, label: `${goal.abbr}: ${goal.text}` }))} onChange={(values) => update({ goalIds: values })} />
-          <CheckboxGroup label="Phases" values={(item.phaseIds || []) as string[]} options={phases.map((phase) => ({ value: phase.id, label: phase.name }))} onChange={(values) => update({ phaseIds: values })} />
+          <CheckboxGroup label="Applicable Goals" values={(item.goalIds || []) as string[]} options={goals.map((goal) => ({ value: goal.id, label: `${goal.abbr}: ${goal.text}` }))} onChange={(values) => update({ goalIds: values })} />
+          <CheckboxGroup label="Applicable Phases" values={(item.phaseIds || []) as string[]} options={phases.map((phase) => ({ value: phase.id, label: phase.name }))} onChange={(values) => update({ phaseIds: values })} />
         </div>
       )}
 

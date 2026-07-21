@@ -78,6 +78,40 @@ function CircleScore({ earned, total, size = 80 }: { earned: number; total: numb
   );
 }
 
+function CardTextField({ label, value, onChange, type = 'text' }: { label: string; value: string; onChange: (value: string) => void; type?: string }) {
+  return (
+    <label className="block space-y-1">
+      <span className="text-xs font-bold uppercase tracking-wide text-slate-500">{label}</span>
+      <input
+        type={type}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="w-full rounded-sm border border-slate-300 px-3 py-2 text-sm outline-none transition-all focus:border-secondary focus:ring-2 focus:ring-secondary/25"
+      />
+    </label>
+  );
+}
+
+function CardEditActions({ onSave, onCancel, saving }: { onSave: () => void; onCancel: () => void; saving: boolean }) {
+  return (
+    <div className="flex justify-end gap-3 pt-1">
+      <button type="button" onClick={onCancel} disabled={saving} className="text-xs font-bold text-slate-500 hover:underline disabled:opacity-50">
+        Cancel
+      </button>
+      <button
+        type="button"
+        onClick={onSave}
+        disabled={saving}
+        className="rounded-sm bg-primary px-4 py-1.5 text-xs font-bold text-white hover:bg-[#002855] disabled:opacity-50"
+      >
+        {saving ? 'Saving...' : 'Save'}
+      </button>
+    </div>
+  );
+}
+
+type EditableCard = 'projectInfo' | 'contactInfo' | 'certification';
+
 export default function ProjectOverview({ id: propId }: { id?: string }) {
   const params = useParams();
   const id = propId || params?.id as string;
@@ -86,6 +120,10 @@ export default function ProjectOverview({ id: propId }: { id?: string }) {
   const [isSubmittingProject, setIsSubmittingProject] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [submitMessage, setSubmitMessage] = useState<string | null>(null);
+  const [editingCard, setEditingCard] = useState<EditableCard | null>(null);
+  const [cardFormData, setCardFormData] = useState<Record<string, string>>({});
+  const [savingCard, setSavingCard] = useState(false);
+  const [cardError, setCardError] = useState<string | null>(null);
 
   const isReadOnly = project?.userRole === 'VIEWER' || project?.userStatus === 'PENDING';
 
@@ -181,6 +219,87 @@ export default function ProjectOverview({ id: propId }: { id?: string }) {
     }
   };
 
+  const startEditingCard = (card: EditableCard) => {
+    if (!project) return;
+    setCardError(null);
+    if (card === 'projectInfo') {
+      setCardFormData({
+        address1: project.address1 || '',
+        city: project.city || '',
+        state: project.state || '',
+        country: project.country || 'United States',
+        zip: project.zip || '',
+        siteArea: project.siteArea || '',
+        buildingArea: project.buildingArea || '',
+      });
+    } else if (card === 'contactInfo') {
+      setCardFormData({
+        contactName: project.contactName || '',
+        contactEmail: project.contactEmail || '',
+        telephone: project.telephone || '',
+        ownerName: project.ownerName || '',
+        firmName: project.firmName || '',
+      });
+    } else {
+      setCardFormData({ certification: project.certification });
+    }
+    setEditingCard(card);
+  };
+
+  const cancelEditingCard = () => {
+    setEditingCard(null);
+    setCardFormData({});
+    setCardError(null);
+  };
+
+  const updateCardField = (field: string, value: string) => {
+    setCardFormData((current) => ({ ...current, [field]: value }));
+  };
+
+  const saveCard = async () => {
+    if (!project || !editingCard || savingCard) return;
+    setSavingCard(true);
+    setCardError(null);
+
+    try {
+      const response = await fetch(`/api/projects/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          projectName: project.projectName,
+          contactName: cardFormData.contactName ?? project.contactName,
+          contactEmail: cardFormData.contactEmail ?? project.contactEmail,
+          telephone: cardFormData.telephone ?? project.telephone,
+          firmName: cardFormData.firmName ?? project.firmName,
+          ownerName: cardFormData.ownerName ?? project.ownerName,
+          address1: cardFormData.address1 ?? project.address1,
+          address2: project.address2,
+          city: cardFormData.city ?? project.city,
+          state: cardFormData.state ?? project.state,
+          zip: cardFormData.zip ?? project.zip,
+          country: cardFormData.country ?? project.country,
+          buildingArea: cardFormData.buildingArea ?? project.buildingArea,
+          siteArea: cardFormData.siteArea ?? project.siteArea,
+          certification: cardFormData.certification ?? project.certification,
+          services: project.services,
+          facilityUses: project.facilityUses.map((facilityUse) => facilityUse.name),
+        }),
+      });
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Unable to save changes.');
+      }
+
+      setProject((current) => current ? { ...current, ...data } : current);
+      cancelEditingCard();
+    } catch (error: any) {
+      setCardError(error.message || 'Unable to save changes.');
+    } finally {
+      setSavingCard(false);
+    }
+  };
+
   return (
     <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
 
@@ -266,21 +385,35 @@ export default function ProjectOverview({ id: propId }: { id?: string }) {
           {/* Project Information */}
           <div className="bg-white border border-slate-200 rounded-sm p-6 shadow-sm">
             <h2 className="text-lg font-bold text-primary mb-4">Project Information</h2>
-            <div className="space-y-2 text-sm">
-              <p><span className="font-bold text-slate-700">Title:</span> {project.projectName}</p>
-              <p><span className="font-bold text-slate-700">Address:</span> {project.address1 || '-'}</p>
-              <p><span className="font-bold text-slate-700">City:</span> {project.city || '-'}</p>
-              <p><span className="font-bold text-slate-700">State:</span> {project.state || '-'}</p>
-              <p><span className="font-bold text-slate-700">Country:</span> {project.country}</p>
-              <p><span className="font-bold text-slate-700">ZIP Code:</span> {project.zip || '-'}</p>
-              <p><span className="font-bold text-slate-700">Site Area:</span> {project.siteArea || '0'} acres</p>
-              <p><span className="font-bold text-slate-700">Building Area:</span> {project.buildingArea || '0'} sq.ft.</p>
-            </div>
-            {!isReadOnly && (
+            {editingCard === 'projectInfo' ? (
+              <div className="space-y-3">
+                <CardTextField label="Address" value={cardFormData.address1 || ''} onChange={(v) => updateCardField('address1', v)} />
+                <CardTextField label="City" value={cardFormData.city || ''} onChange={(v) => updateCardField('city', v)} />
+                <CardTextField label="State" value={cardFormData.state || ''} onChange={(v) => updateCardField('state', v)} />
+                <CardTextField label="Country" value={cardFormData.country || ''} onChange={(v) => updateCardField('country', v)} />
+                <CardTextField label="ZIP Code" value={cardFormData.zip || ''} onChange={(v) => updateCardField('zip', v)} />
+                <CardTextField label="Site Area (acres)" value={cardFormData.siteArea || ''} onChange={(v) => updateCardField('siteArea', v)} />
+                <CardTextField label="Building Area (sq.ft.)" value={cardFormData.buildingArea || ''} onChange={(v) => updateCardField('buildingArea', v)} />
+                {cardError && <p className="text-xs font-medium text-red-600">{cardError}</p>}
+                <CardEditActions onSave={saveCard} onCancel={cancelEditingCard} saving={savingCard} />
+              </div>
+            ) : (
+              <div className="space-y-2 text-sm">
+                <p><span className="font-bold text-slate-700">Title:</span> {project.projectName}</p>
+                <p><span className="font-bold text-slate-700">Address:</span> {project.address1 || '-'}</p>
+                <p><span className="font-bold text-slate-700">City:</span> {project.city || '-'}</p>
+                <p><span className="font-bold text-slate-700">State:</span> {project.state || '-'}</p>
+                <p><span className="font-bold text-slate-700">Country:</span> {project.country}</p>
+                <p><span className="font-bold text-slate-700">ZIP Code:</span> {project.zip || '-'}</p>
+                <p><span className="font-bold text-slate-700">Site Area:</span> {project.siteArea || '0'} acres</p>
+                <p><span className="font-bold text-slate-700">Building Area:</span> {project.buildingArea || '0'} sq.ft.</p>
+              </div>
+            )}
+            {!isReadOnly && editingCard !== 'projectInfo' && (
               <div className="mt-4 flex justify-end">
-                <Link href={`/projects/${id}/edit`} className="text-xs text-secondary flex items-center gap-1 hover:underline">
+                <button type="button" onClick={() => startEditingCard('projectInfo')} className="text-xs text-secondary flex items-center gap-1 hover:underline">
                   <Edit size={12} /> Edit
-                </Link>
+                </button>
               </div>
             )}
           </div>
@@ -288,6 +421,17 @@ export default function ProjectOverview({ id: propId }: { id?: string }) {
           {/* Contact Information */}
           <div className="bg-white border border-slate-200 rounded-sm p-6 shadow-sm">
             <h2 className="text-lg font-bold text-primary mb-4">Contact Information</h2>
+            {editingCard === 'contactInfo' ? (
+              <div className="space-y-3">
+                <CardTextField label="Name" value={cardFormData.contactName || ''} onChange={(v) => updateCardField('contactName', v)} />
+                <CardTextField label="Email" type="email" value={cardFormData.contactEmail || ''} onChange={(v) => updateCardField('contactEmail', v)} />
+                <CardTextField label="Telephone" value={cardFormData.telephone || ''} onChange={(v) => updateCardField('telephone', v)} />
+                <CardTextField label="Project Owner" value={cardFormData.ownerName || ''} onChange={(v) => updateCardField('ownerName', v)} />
+                <CardTextField label="Architect" value={cardFormData.firmName || ''} onChange={(v) => updateCardField('firmName', v)} />
+                {cardError && <p className="text-xs font-medium text-red-600">{cardError}</p>}
+                <CardEditActions onSave={saveCard} onCancel={cancelEditingCard} saving={savingCard} />
+              </div>
+            ) : (
             <div className="space-y-2 text-sm">
               <p><span className="font-bold text-slate-700">Name:</span> {project.contactName}</p>
               <p><span className="font-bold text-slate-700">Email:</span> {project.contactEmail}</p>
@@ -295,11 +439,12 @@ export default function ProjectOverview({ id: propId }: { id?: string }) {
               <p><span className="font-bold text-slate-700">Project Owner:</span> {project.ownerName || '-'}</p>
               <p><span className="font-bold text-slate-700">Architect:</span> {project.firmName || '-'}</p>
             </div>
-            {!isReadOnly && (
+            )}
+            {!isReadOnly && editingCard !== 'contactInfo' && (
               <div className="mt-4 flex justify-end">
-                <Link href={`/projects/${id}/edit`} className="text-xs text-secondary flex items-center gap-1 hover:underline">
+                <button type="button" onClick={() => startEditingCard('contactInfo')} className="text-xs text-secondary flex items-center gap-1 hover:underline">
                   <Edit size={12} /> Edit
-                </Link>
+                </button>
               </div>
             )}
           </div>
@@ -378,12 +523,44 @@ export default function ProjectOverview({ id: propId }: { id?: string }) {
           </div>
 
           <div className="bg-white border border-slate-200 rounded-sm p-6 shadow-sm">
-            <h2 className="text-lg font-bold text-primary mb-2">Certification: <span className="font-normal">{project.certification}</span></h2>
-            {!isReadOnly && (
+            {editingCard === 'certification' ? (
+              <div className="space-y-3">
+                <h2 className="text-lg font-bold text-primary mb-2">Certification</h2>
+                <div className="flex flex-col gap-2">
+                  <label className="flex items-center gap-2 cursor-pointer text-sm text-slate-700">
+                    <input
+                      type="radio"
+                      name="certification"
+                      value="Guided Certification"
+                      checked={cardFormData.certification === 'Guided Certification'}
+                      onChange={(e) => updateCardField('certification', e.target.value)}
+                      className="w-4 h-4 text-secondary focus:ring-secondary border-slate-300"
+                    />
+                    Guided Certification
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer text-sm text-slate-700">
+                    <input
+                      type="radio"
+                      name="certification"
+                      value="Certification Only"
+                      checked={cardFormData.certification === 'Certification Only'}
+                      onChange={(e) => updateCardField('certification', e.target.value)}
+                      className="w-4 h-4 text-secondary focus:ring-secondary border-slate-300"
+                    />
+                    Certification Only
+                  </label>
+                </div>
+                {cardError && <p className="text-xs font-medium text-red-600">{cardError}</p>}
+                <CardEditActions onSave={saveCard} onCancel={cancelEditingCard} saving={savingCard} />
+              </div>
+            ) : (
+              <h2 className="text-lg font-bold text-primary mb-2">Certification: <span className="font-normal">{project.certification}</span></h2>
+            )}
+            {!isReadOnly && editingCard !== 'certification' && (
               <div className="mt-3 flex justify-end">
-                <Link href={`/projects/${id}/edit`} className="text-xs text-secondary flex items-center gap-1 hover:underline">
+                <button type="button" onClick={() => startEditingCard('certification')} className="text-xs text-secondary flex items-center gap-1 hover:underline">
                   <Edit size={12} /> Edit
-                </Link>
+                </button>
               </div>
             )}
           </div>

@@ -163,7 +163,7 @@ export default function ProfileUpdateForm() {
                             type="password"
                             value={verificationPassword}
                             onChange={(e) => setVerificationPassword(e.target.value)}
-                            className="w-full bg-[#f1f4ff] border border-slate-200 rounded-md px-4 py-4 text-sm focus:ring-2 focus:ring-secondary outline-none transition-all"
+                            className="w-full bg-white border border-slate-300 rounded-md px-4 py-4 text-sm focus:ring-2 focus:ring-secondary outline-none transition-all"
                             required
                         />
                     </div>
@@ -350,7 +350,7 @@ export default function ProfileUpdateForm() {
                         value={formData.password}
                         placeholder="Password"
                         onChange={handleInputChange}
-                        className="w-full border border-slate-300 rounded-md px-4 py-3 text-sm focus:ring-2 focus:ring-secondary outline-none transition-all"
+                        className="w-full border border-slate-300 rounded-md px-4 py-3 text-sm focus:ring-2 focus:ring-secondary outline-none transition-all bg-white"
                     />
                 </div>
                 <div className="space-y-2">
@@ -363,7 +363,7 @@ export default function ProfileUpdateForm() {
                         value={formData.confirmPassword}
                         placeholder="Confirm Password"
                         onChange={handleInputChange}
-                        className="w-full border border-slate-300 rounded-md px-4 py-3 text-sm focus:ring-2 focus:ring-secondary outline-none transition-all"
+                        className="w-full border border-slate-300 rounded-md px-4 py-3 text-sm focus:ring-2 focus:ring-secondary outline-none transition-all bg-white"
                     />
                 </div>
             </div>
